@@ -1,6 +1,7 @@
 import os
 import logging
 from flask import Flask, render_template, request, jsonify
+import json
 
 from utils.openai_helper import get_chat_response
 
@@ -9,6 +10,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "a-very-secret-key")
+
+# Load VOICEVOX speaker data
+with open('attached_assets/voicebox_speakerID.json', 'r', encoding='utf-8') as f:
+    VOICEVOX_SPEAKERS = json.load(f)
 
 @app.route('/')
 def index():
@@ -20,6 +25,16 @@ def get_tts_key():
     if not tts_key:
         return jsonify({'error': 'TTS Quest API key not configured'}), 500
     return jsonify({'key': tts_key})
+
+@app.route('/get-speakers')
+def get_speakers():
+    speakers = [{
+        'id': style['id'],
+        'name': f"{speaker['name']} ({style['name']})",
+        'speaker_name': speaker['name']
+    } for speaker in VOICEVOX_SPEAKERS
+    for style in speaker['styles']]
+    return jsonify(speakers)
 
 @app.route('/chat', methods=['POST'])
 def chat():

@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
+    const speakerASelect = document.getElementById('speaker-a');
+    const speakerBSelect = document.getElementById('speaker-b');
 
     // Fetch TTS Quest API Key from server
     let TTS_QUEST_API_KEY = '';
@@ -50,27 +52,60 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('Error fetching TTS API key:', error);
     }
 
-    const SPEAKER_A_ID = '1'; // ずんだもん
-    const SPEAKER_B_ID = '2'; // 四国めたん
+    // Load speakers
+    try {
+        const response = await fetch('/get-speakers');
+        const speakers = await response.json();
+
+        // Populate speaker selects
+        const populateSelect = (select, speakers) => {
+            speakers.forEach(speaker => {
+                const option = document.createElement('option');
+                option.value = speaker.id;
+                option.textContent = speaker.name;
+                select.appendChild(option);
+            });
+        };
+
+        populateSelect(speakerASelect, speakers);
+        populateSelect(speakerBSelect, speakers);
+
+        // Set default speakers
+        speakerASelect.value = '3'; // ずんだもん
+        speakerBSelect.value = '2'; // 四国めたん
+    } catch (error) {
+        console.error('Error loading speakers:', error);
+    }
+
+    function getCurrentTime() {
+        const now = new Date();
+        return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    }
 
     function addMessage(text, type) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
         messageDiv.classList.add(`${type}-message`);
 
-        const textDiv = document.createElement('div');
-        textDiv.textContent = text;
-        messageDiv.appendChild(textDiv);
+        const contentDiv = document.createElement('div');
+        contentDiv.classList.add('message-content');
+        contentDiv.textContent = text;
+        messageDiv.appendChild(contentDiv);
+
+        const timestamp = document.createElement('div');
+        timestamp.classList.add('timestamp');
+        timestamp.textContent = getCurrentTime();
+        messageDiv.appendChild(timestamp);
 
         if (type !== 'user' && TTS_QUEST_API_KEY) {
             const audioControl = document.createElement('div');
             audioControl.classList.add('audio-control');
 
             const playButton = document.createElement('button');
-            playButton.classList.add('btn', 'btn-sm', 'btn-outline-primary');
             playButton.innerHTML = '<i class="fas fa-play"></i>';
 
-            const speakerId = type === 'ai-message-a' ? SPEAKER_A_ID : SPEAKER_B_ID;
+            const speakerId = type === 'ai-message-a' ? 
+                speakerASelect.value : speakerBSelect.value;
 
             playButton.addEventListener('click', () => {
                 const audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
