@@ -28,13 +28,27 @@ def get_tts_key():
 
 @app.route('/get-speakers')
 def get_speakers():
-    speakers = [{
-        'id': style['id'],
-        'name': f"{speaker['name']} ({style['name']})",
-        'speaker_name': speaker['name']
-    } for speaker in VOICEVOX_SPEAKERS
-    for style in speaker['styles']]
-    return jsonify(speakers)
+    speakers = []
+    styles_map = {}
+
+    for speaker in VOICEVOX_SPEAKERS:
+        speaker_name = speaker['name']
+        speakers.append({
+            'name': speaker_name,
+            'uuid': speaker['speaker_uuid']
+        })
+
+        styles_map[speaker['speaker_uuid']] = [
+            {
+                'id': style['id'],
+                'name': style['name']
+            } for style in speaker['styles']
+        ]
+
+    return jsonify({
+        'speakers': speakers,
+        'styles': styles_map
+    })
 
 @app.route('/chat', methods=['POST'])
 def chat():
