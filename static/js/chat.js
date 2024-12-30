@@ -25,7 +25,7 @@ class TtsQuestV3Voicevox extends Audio {
 
         const apiUrl = 'https://api.tts.quest/v3/voicevox/synthesis';
         this.dispatchEvent(new CustomEvent('tts-loading'));
-        console.log('Starting TTS generation...'); 
+        console.log('Starting TTS generation...');
 
         fetch(apiUrl + '?' + query.toString())
             .then(response => {
@@ -35,7 +35,7 @@ class TtsQuestV3Voicevox extends Audio {
                 return response.json();
             })
             .then(response => {
-                console.log('TTS API Response:', response); 
+                console.log('TTS API Response:', response);
                 this.handleApiResponse(response, query);
             })
             .catch(error => {
@@ -49,17 +49,17 @@ class TtsQuestV3Voicevox extends Audio {
             if (this.retryCount >= this.maxRetries) {
                 throw new Error('最大リトライ回数を超えました');
             }
-            console.log(`Retrying after ${response.retryAfter} seconds...`); 
+            console.log(`Retrying after ${response.retryAfter} seconds...`);
             this.retryCount++;
             setTimeout(() => this.startGeneration(query), 1000 * (1 + response.retryAfter));
         }
         else if (response.mp3StreamingUrl) {
-            console.log('Received MP3 URL:', response.mp3StreamingUrl); 
+            console.log('Received MP3 URL:', response.mp3StreamingUrl);
             this.src = response.mp3StreamingUrl;
             this.preload = 'auto';
 
             this.oncanplaythrough = () => {
-                console.log('Audio is ready to play'); 
+                console.log('Audio is ready to play');
                 if (!this.isInitialized) {
                     this.isInitialized = true;
                     this.dispatchEvent(new CustomEvent('tts-ready'));
@@ -173,39 +173,39 @@ document.addEventListener('DOMContentLoaded', async function () {
                 audio = new TtsQuestV3Voicevox(styleId, text, TTS_QUEST_API_KEY);
 
                 audio.addEventListener('tts-loading', () => {
-                    console.log('TTS Loading...'); 
+                    console.log('TTS Loading...');
                     statusIndicator.textContent = '音声生成中...';
                     playButton.disabled = true;
                 });
 
                 audio.addEventListener('tts-ready', () => {
-                    console.log('TTS Ready!'); 
+                    console.log('TTS Ready!');
                     statusIndicator.textContent = '再生可能';
                     playButton.disabled = false;
                 });
 
                 audio.addEventListener('tts-error', (event) => {
-                    console.error('TTS Error:', event.detail); 
+                    console.error('TTS Error:', event.detail);
                     statusIndicator.textContent = `エラー: ${event.detail}`;
                     playButton.disabled = true;
                 });
 
                 audio.addEventListener('play', () => {
-                    console.log('Audio playing'); 
+                    console.log('Audio playing');
                     isPlaying = true;
                     playButton.innerHTML = '<i class="fas fa-stop"></i>';
                     statusIndicator.textContent = '再生中';
                 });
 
                 audio.addEventListener('ended', () => {
-                    console.log('Audio ended'); 
+                    console.log('Audio ended');
                     isPlaying = false;
                     playButton.innerHTML = '<i class="fas fa-play"></i>';
                     statusIndicator.textContent = '再生可能';
                 });
 
                 audio.addEventListener('error', (e) => {
-                    console.error('Audio error:', e); 
+                    console.error('Audio error:', e);
                     statusIndicator.textContent = '再生エラー';
                     playButton.disabled = true;
                 });
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         messageDiv.appendChild(timestamp);
 
         if (type !== 'user' && TTS_QUEST_API_KEY) {
-            const styleId = type === 'ai-message-a' ? 
+            const styleId = type === 'ai-message-a' ?
                 styleASelect.value : styleBSelect.value;
             const audioControl = createAudioControl(text, styleId);
             messageDiv.appendChild(audioControl);
@@ -317,7 +317,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                         const audio = speakerBAudio.querySelector('button');
                         const statusIndicator = speakerBAudio.querySelector('.status-indicator');
 
-                        const waitTimeMs = data.speaker_a.length * 250;
+                        // 待機時間を文字数×0.2秒に変更
+                        const waitTimeMs = data.speaker_a.length * 200;
                         console.log(`Waiting ${waitTimeMs}ms before playing speaker B's audio`);
 
                         setTimeout(() => {
