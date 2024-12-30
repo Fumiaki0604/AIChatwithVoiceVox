@@ -302,7 +302,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                         const audio = speakerBAudio.querySelector('button');
                         const statusIndicator = speakerBAudio.querySelector('.status-indicator');
 
-                        // Wait a short moment before playing speaker B's audio
+                        // Calculate wait time based on speaker A's text length
+                        const waitTimeMs = data.speaker_a.length * 1000;
+                        console.log(`Waiting ${waitTimeMs}ms before playing speaker B's audio`); // デバッグログ
+
+                        // Wait for calculated time before playing speaker B's audio
                         setTimeout(() => {
                             // Automatically play speaker B's audio
                             audio.click();
@@ -319,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 clearInterval(checkStatus);
                                 resolve();
                             }, 30000);
-                        }, 1000); // 1秒待ってから再生開始
+                        }, waitTimeMs); // 文字数×1秒待ってから再生開始
                     });
                 }
 
