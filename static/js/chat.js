@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         populateSpeakers(speakerASelect);
         populateSpeakers(speakerBSelect);
 
-        // Set default speakers and update their styles
+        // Set default speakers
         speakerASelect.value = speakersData.speakers.find(s => s.name === 'ずんだもん')?.uuid || speakerASelect.value;
         speakerBSelect.value = speakersData.speakers.find(s => s.name === '四国めたん')?.uuid || speakerBSelect.value;
 

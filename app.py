@@ -2,7 +2,6 @@ import os
 import logging
 from flask import Flask, render_template, request, jsonify
 import json
-
 from utils.openai_helper import get_chat_response
 
 # Configure logging
@@ -11,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "a-very-secret-key")
 
-# Load VOICEVOX speaker data
+# Load VOICEVOX speaker data (this is kept for the get-speakers endpoint, even though it's not used for synthesis)
 with open('attached_assets/voicebox_speakerID.json', 'r', encoding='utf-8') as f:
     VOICEVOX_SPEAKERS = json.load(f)
 
