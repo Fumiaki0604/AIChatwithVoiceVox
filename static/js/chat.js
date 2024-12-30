@@ -22,9 +22,11 @@ class TtsQuestV3Voicevox extends Audio {
                     owner.src = response.mp3StreamingUrl;
                 }
                 else if (typeof response.errorMessage !== 'undefined') {
+                    console.error('TTS Error:', response.errorMessage);
                     throw new Error(response.errorMessage);
                 }
                 else {
+                    console.error('Unknown TTS Error');
                     throw new Error("serverError");
                 }
             });
@@ -58,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('Failed to get TTS API key:', data.error);
         } else {
             TTS_QUEST_API_KEY = data.key;
+            console.log('TTS API key loaded successfully');
         }
     } catch (error) {
         console.error('Error fetching TTS API key:', error);
@@ -152,6 +155,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 styleASelect.value : styleBSelect.value;
 
             playButton.addEventListener('click', () => {
+                console.log('Playing audio with speaker ID:', speakerId);
                 const audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
                 audio.play();
             });
