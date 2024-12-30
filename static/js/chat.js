@@ -295,7 +295,34 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
 
                 // After speaker A's audio completes, add speaker B's response
-                addMessage(data.speaker_b, 'ai-message-b');
+                const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
+                const speakerBAudio = speakerBMessage.querySelector('.audio-control');
+                if (speakerBAudio) {
+                    await new Promise((resolve, reject) => {
+                        const audio = speakerBAudio.querySelector('button');
+                        const statusIndicator = speakerBAudio.querySelector('.status-indicator');
+
+                        // Wait a short moment before playing speaker B's audio
+                        setTimeout(() => {
+                            // Automatically play speaker B's audio
+                            audio.click();
+
+                            const checkStatus = setInterval(() => {
+                                if (statusIndicator.textContent === '再生可能' && !audio.disabled) {
+                                    clearInterval(checkStatus);
+                                    resolve();
+                                }
+                            }, 1000);
+
+                            // Timeout after 30 seconds
+                            setTimeout(() => {
+                                clearInterval(checkStatus);
+                                resolve();
+                            }, 30000);
+                        }, 1000); // 1秒待ってから再生開始
+                    });
+                }
+
             } else {
                 addMessage('エラーが発生しました: ' + data.error, 'error');
             }
