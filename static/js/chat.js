@@ -1,6 +1,7 @@
 class TtsQuestV3Voicevox extends Audio {
     constructor(speakerId, text, ttsQuestApiKey) {
         super();
+        console.log("Creating TTS request for speaker:", speakerId);
         var params = {};
         params['key'] = ttsQuestApiKey;
         params['speaker'] = speakerId;
@@ -10,23 +11,35 @@ class TtsQuestV3Voicevox extends Audio {
     }
 
     #main(owner, query) {
-        if (owner.src.length>0) return;
+        if (owner.src.length > 0) return;
         var apiUrl = 'https://api.tts.quest/v3/voicevox/synthesis';
+        console.log("Fetching audio from TTS Quest API...");
         fetch(apiUrl + '?' + query.toString())
             .then(response => response.json())
             .then(response => {
+                console.log("TTS API Response:", response);
                 if (typeof response.retryAfter !== 'undefined') {
-                    setTimeout(owner.#main, 1000*(1+response.retryAfter), owner, query);
+                    console.log("Retry after:", response.retryAfter);
+                    setTimeout(owner.#main, 1000 * (1 + response.retryAfter), owner, query);
                 }
                 else if (typeof response.mp3StreamingUrl !== 'undefined') {
+                    console.log("Got MP3 URL:", response.mp3StreamingUrl);
                     owner.src = response.mp3StreamingUrl;
+                    owner.play().catch(error => {
+                        console.error("Error playing audio:", error);
+                    });
                 }
                 else if (typeof response.errorMessage !== 'undefined') {
+                    console.error("TTS API Error:", response.errorMessage);
                     throw new Error(response.errorMessage);
                 }
                 else {
+                    console.error("Unknown server response:", response);
                     throw new Error("serverError");
                 }
+            })
+            .catch(error => {
+                console.error("TTS API Request failed:", error);
             });
     }
 }
@@ -47,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('Failed to get TTS API key:', data.error);
         } else {
             TTS_QUEST_API_KEY = data.key;
+            console.log("TTS API key loaded successfully");
         }
     } catch (error) {
         console.error('Error fetching TTS API key:', error);
@@ -104,12 +118,47 @@ document.addEventListener('DOMContentLoaded', async function() {
             const playButton = document.createElement('button');
             playButton.innerHTML = '<i class="fas fa-play"></i>';
 
-            const speakerId = type === 'ai-message-a' ? 
+            const speakerId = type === 'ai-message-a' ?
                 speakerASelect.value : speakerBSelect.value;
 
+            let isPlaying = false;
+            let audio = null;
+
             playButton.addEventListener('click', () => {
-                const audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
-                audio.play();
+                if (isPlaying && audio) {
+                    audio.pause();
+                    audio = null;
+                    playButton.innerHTML = '<i class="fas fa-play"></i>';
+                    isPlaying = false;
+                } else {
+                    playButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
+
+                    audio.addEventListener('playing', () => {
+                        playButton.innerHTML = '<i class="fas fa-pause"></i>';
+                        isPlaying = true;
+                    });
+
+                    audio.addEventListener('ended', () => {
+                        playButton.innerHTML = '<i class="fas fa-play"></i>';
+                        isPlaying = false;
+                        audio = null;
+                    });
+
+                    audio.addEventListener('error', (e) => {
+                        console.error('Audio playback error:', e);
+                        playButton.innerHTML = '<i class="fas fa-play"></i>';
+                        isPlaying = false;
+                        audio = null;
+                    });
+                    audio.play().catch(error => {
+                        console.error("Error playing audio:", error);
+                        playButton.innerHTML = '<i class="fas fa-play"></i>';
+                        isPlaying = false;
+                        audio = null;
+                    });
+
+                }
             });
 
             audioControl.appendChild(playButton);
