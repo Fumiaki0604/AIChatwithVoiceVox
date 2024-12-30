@@ -1,11 +1,42 @@
+class TtsQuestV3Voicevox extends Audio {
+    constructor(speakerId, text, ttsQuestApiKey) {
+        super();
+        var params = {};
+        params['key'] = ttsQuestApiKey;
+        params['speaker'] = speakerId;
+        params['text'] = text;
+        const query = new URLSearchParams(params);
+        this.#main(this, query);
+    }
+
+    #main(owner, query) {
+        if (owner.src.length>0) return;
+        var apiUrl = 'https://api.tts.quest/v3/voicevox/synthesis';
+        fetch(apiUrl + '?' + query.toString())
+            .then(response => response.json())
+            .then(response => {
+                if (typeof response.retryAfter !== 'undefined') {
+                    setTimeout(owner.#main, 1000*(1+response.retryAfter), owner, query);
+                }
+                else if (typeof response.mp3StreamingUrl !== 'undefined') {
+                    owner.src = response.mp3StreamingUrl;
+                }
+                else if (typeof response.errorMessage !== 'undefined') {
+                    throw new Error(response.errorMessage);
+                }
+                else {
+                    throw new Error("serverError");
+                }
+            });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
-
-    // Set default speaker IDs
-    const SPEAKER_A_ID = 1; // ずんだもん（あまあま）
-    const SPEAKER_B_ID = 2; // 四国めたん（ノーマル）
+    const speakerASelect = document.getElementById('speaker-a');
+    const speakerBSelect = document.getElementById('speaker-b');
 
     // Fetch TTS Quest API Key from server
     let TTS_QUEST_API_KEY = '';
@@ -16,22 +47,39 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error('Failed to get TTS API key:', data.error);
         } else {
             TTS_QUEST_API_KEY = data.key;
-            console.log('TTS API key loaded successfully');
         }
     } catch (error) {
         console.error('Error fetching TTS API key:', error);
     }
 
+    // Load speakers
+    try {
+        const response = await fetch('/get-speakers');
+        const speakers = await response.json();
+
+        // Populate speaker selects
+        const populateSelect = (select, speakers) => {
+            speakers.forEach(speaker => {
+                const option = document.createElement('option');
+                option.value = speaker.id;
+                option.textContent = speaker.name;
+                select.appendChild(option);
+            });
+        };
+
+        populateSelect(speakerASelect, speakers);
+        populateSelect(speakerBSelect, speakers);
+
+        // Set default speakers
+        speakerASelect.value = '3'; // ずんだもん
+        speakerBSelect.value = '2'; // 四国めたん
+    } catch (error) {
+        console.error('Error loading speakers:', error);
+    }
+
     function getCurrentTime() {
         const now = new Date();
         return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function playAudio(text, speakerId) {
-        if (!text) return;
-        console.log('Playing audio with speaker:', speakerId);
-        var audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
-        audio.play();
     }
 
     function addMessage(text, type) {
@@ -49,19 +97,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         timestamp.textContent = getCurrentTime();
         messageDiv.appendChild(timestamp);
 
-        if (type !== 'user') {
+        if (type !== 'user' && TTS_QUEST_API_KEY) {
             const audioControl = document.createElement('div');
             audioControl.classList.add('audio-control');
 
             const playButton = document.createElement('button');
             playButton.innerHTML = '<i class="fas fa-play"></i>';
-            playButton.classList.add('btn', 'btn-sm', 'btn-outline-primary');
 
-            const speakerId = type === 'ai-message-a' ? SPEAKER_A_ID : SPEAKER_B_ID;
+            const speakerId = type === 'ai-message-a' ? 
+                speakerASelect.value : speakerBSelect.value;
 
             playButton.addEventListener('click', () => {
-                console.log('Play button clicked for:', type);
-                playAudio(text, speakerId);
+                const audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
+                audio.play();
             });
 
             audioControl.appendChild(playButton);

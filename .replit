@@ -17,14 +17,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "VOICEVOX Engine"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Flask Server"
+args = "Flask Web Server"
 
 [[workflows.workflow]]
-name = "VOICEVOX Engine"
+name = "Flask Web Server"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -35,22 +31,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "docker run --rm -d -p 50021:50021 voicevox/voicevox_engine:latest"
-waitForPort = 50021
-
-[[workflows.workflow]]
-name = "Flask Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python app.py"
+args = "python main.py"
 waitForPort = 5000
 
 [[ports]]
