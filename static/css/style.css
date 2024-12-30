@@ -43,15 +43,23 @@ body {
 .user-message .message-content {
     background-color: var(--user-message-color);
     border-top-right-radius: 0;
+    color: #000;
 }
 
 .ai-message-a, .ai-message-b {
     margin-right: auto;
 }
 
-.ai-message-a .message-content, .ai-message-b .message-content {
-    background-color: var(--ai-message-color);
+.ai-message-a .message-content {
+    background-color: #e3f2fd;
     border-top-left-radius: 0;
+    color: #000;
+}
+
+.ai-message-b .message-content {
+    background-color: #fff3e0;
+    border-top-left-radius: 0;
+    color: #000;
 }
 
 .timestamp {
