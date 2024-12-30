@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function playAudio(text, speakerId) {
         if (!text) return;
         console.log('Playing audio with speaker:', speakerId);
-        var audio = new TtsQuestV3Voicevox(speakerId, text, '');  // API keyはoptional
+        var audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
         audio.play();
     }
 

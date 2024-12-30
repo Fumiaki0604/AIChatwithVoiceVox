@@ -2,7 +2,6 @@ import os
 import logging
 import json
 from flask import Flask, render_template, request, jsonify
-from utils.openai_helper import get_chat_response
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -12,8 +11,13 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "a-very-secret-key")
 
 # Load VOICEVOX speaker data
-with open('attached_assets/voicebox_speakerID.json', 'r', encoding='utf-8') as f:
-    VOICEVOX_SPEAKERS = json.load(f)
+try:
+    with open('attached_assets/voicebox_speakerID.json', 'r', encoding='utf-8') as f:
+        VOICEVOX_SPEAKERS = json.load(f)
+        logger.debug('Successfully loaded VOICEVOX speaker data')
+except Exception as e:
+    logger.error(f'Error loading VOICEVOX speaker data: {e}')
+    VOICEVOX_SPEAKERS = []
 
 @app.route('/')
 def index():
@@ -33,20 +37,23 @@ def chat():
     try:
         data = request.json
         user_message = data.get('message', '')
+        logger.debug(f'Received chat message, length: {len(user_message)}')
 
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
 
-        # Get ChatGPT response
-        response_a = get_chat_response(user_message, "main_response")
-        response_b = get_chat_response(response_a, "reaction_response")
-
-        logger.debug('Chat responses generated successfully')
-        return jsonify({
-            'speaker_a': response_a,
-            'speaker_b': response_b
-        })
+        # テスト用のエコーレスポンス
+        response_data = {
+            'speaker_a': f"{user_message}",
+            'speaker_b': "はい、承知しました。"
+        }
+        logger.debug('Generated chat response successfully')
+        return jsonify(response_data)
 
     except Exception as e:
         logger.error(f'Error in chat endpoint: {str(e)}')
         return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    logger.info('Starting Flask application...')
+    app.run(host='0.0.0.0', port=5000, debug=True)
