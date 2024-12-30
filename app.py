@@ -31,11 +31,10 @@ def get_tts_key():
 @app.route('/get-speakers')
 def get_speakers():
     speakers = [{
-        'id': style['id'],
-        'name': f"{speaker['name']} ({style['name']})",
-        'speaker_name': speaker['name']
-    } for speaker in VOICEVOX_SPEAKERS
-    for style in speaker['styles']]
+        'speaker_uuid': speaker['speaker_uuid'],
+        'name': speaker['name'],
+        'styles': speaker['styles']
+    } for speaker in VOICEVOX_SPEAKERS]
     return jsonify(speakers)
 
 @app.route('/chat', methods=['POST'])

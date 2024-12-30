@@ -1,7 +1,7 @@
 class TtsQuestV3Voicevox extends Audio {
-    constructor(speakerId, text, ttsQuestApiKey) {
+    constructor(styleId, text, ttsQuestApiKey) {
         super();
-        this.speakerId = speakerId;
+        this.styleId = styleId;
         this.text = text;
         this.ttsQuestApiKey = ttsQuestApiKey;
         this.isInitialized = false;
@@ -13,7 +13,7 @@ class TtsQuestV3Voicevox extends Audio {
     initialize() {
         const params = {
             key: this.ttsQuestApiKey,
-            speaker: this.speakerId,
+            speaker: this.styleId,
             text: this.text
         };
         const query = new URLSearchParams(params);
@@ -25,7 +25,7 @@ class TtsQuestV3Voicevox extends Audio {
 
         const apiUrl = 'https://api.tts.quest/v3/voicevox/synthesis';
         this.dispatchEvent(new CustomEvent('tts-loading'));
-        console.log('Starting TTS generation...'); // デバッグログ
+        console.log('Starting TTS generation...'); 
 
         fetch(apiUrl + '?' + query.toString())
             .then(response => {
@@ -35,7 +35,7 @@ class TtsQuestV3Voicevox extends Audio {
                 return response.json();
             })
             .then(response => {
-                console.log('TTS API Response:', response); // デバッグログ
+                console.log('TTS API Response:', response); 
                 this.handleApiResponse(response, query);
             })
             .catch(error => {
@@ -49,17 +49,17 @@ class TtsQuestV3Voicevox extends Audio {
             if (this.retryCount >= this.maxRetries) {
                 throw new Error('最大リトライ回数を超えました');
             }
-            console.log(`Retrying after ${response.retryAfter} seconds...`); // デバッグログ
+            console.log(`Retrying after ${response.retryAfter} seconds...`); 
             this.retryCount++;
             setTimeout(() => this.startGeneration(query), 1000 * (1 + response.retryAfter));
         }
         else if (response.mp3StreamingUrl) {
-            console.log('Received MP3 URL:', response.mp3StreamingUrl); // デバッグログ
+            console.log('Received MP3 URL:', response.mp3StreamingUrl); 
             this.src = response.mp3StreamingUrl;
             this.preload = 'auto';
 
             this.oncanplaythrough = () => {
-                console.log('Audio is ready to play'); // デバッグログ
+                console.log('Audio is ready to play'); 
                 if (!this.isInitialized) {
                     this.isInitialized = true;
                     this.dispatchEvent(new CustomEvent('tts-ready'));
@@ -88,9 +88,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     const sendButton = document.getElementById('send-button');
     const speakerASelect = document.getElementById('speaker-a');
     const speakerBSelect = document.getElementById('speaker-b');
+    const styleASelect = document.getElementById('style-a');
+    const styleBSelect = document.getElementById('style-b');
 
-    // Fetch TTS Quest API Key from server
+    let speakers = [];
     let TTS_QUEST_API_KEY = '';
+
     try {
         const response = await fetch('/get-tts-key');
         const data = await response.json();
@@ -103,27 +106,44 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error('Error fetching TTS API key:', error);
     }
 
-    // Load speakers
+    function updateStyles(speakerId, styleSelect) {
+        const speaker = speakers.find(s => s.speaker_uuid === speakerId);
+        if (!speaker) return;
+
+        styleSelect.innerHTML = '';
+        speaker.styles.forEach(style => {
+            const option = document.createElement('option');
+            option.value = style.id;
+            option.textContent = style.name;
+            styleSelect.appendChild(option);
+        });
+    }
+
     try {
         const response = await fetch('/get-speakers');
-        const speakers = await response.json();
+        speakers = await response.json();
 
-        // Populate speaker selects
-        const populateSelect = (select, speakers) => {
+        const populateSpeakerSelect = (select) => {
             speakers.forEach(speaker => {
                 const option = document.createElement('option');
-                option.value = speaker.id;
+                option.value = speaker.speaker_uuid;
                 option.textContent = speaker.name;
                 select.appendChild(option);
             });
         };
 
-        populateSelect(speakerASelect, speakers);
-        populateSelect(speakerBSelect, speakers);
+        populateSpeakerSelect(speakerASelect);
+        populateSpeakerSelect(speakerBSelect);
 
-        // Set default speakers
-        speakerASelect.value = '3'; // ずんだもん
-        speakerBSelect.value = '2'; // 四国めたん
+        speakerASelect.value = speakers.find(s => s.name === 'ずんだもん')?.speaker_uuid || speakers[0]?.speaker_uuid;
+        speakerBSelect.value = speakers.find(s => s.name === '四国めたん')?.speaker_uuid || speakers[1]?.speaker_uuid;
+
+        updateStyles(speakerASelect.value, styleASelect);
+        updateStyles(speakerBSelect.value, styleBSelect);
+
+        speakerASelect.addEventListener('change', () => updateStyles(speakerASelect.value, styleASelect));
+        speakerBSelect.addEventListener('change', () => updateStyles(speakerBSelect.value, styleBSelect));
+
     } catch (error) {
         console.error('Error loading speakers:', error);
     }
@@ -133,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
     }
 
-    const createAudioControl = (text, speakerId) => {
+    const createAudioControl = (text, styleId) => {
         const audioControl = document.createElement('div');
         audioControl.classList.add('audio-control');
 
@@ -150,42 +170,42 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         const initializeAudio = () => {
             if (!audio) {
-                audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
+                audio = new TtsQuestV3Voicevox(styleId, text, TTS_QUEST_API_KEY);
 
                 audio.addEventListener('tts-loading', () => {
-                    console.log('TTS Loading...'); // デバッグログ
+                    console.log('TTS Loading...'); 
                     statusIndicator.textContent = '音声生成中...';
                     playButton.disabled = true;
                 });
 
                 audio.addEventListener('tts-ready', () => {
-                    console.log('TTS Ready!'); // デバッグログ
+                    console.log('TTS Ready!'); 
                     statusIndicator.textContent = '再生可能';
                     playButton.disabled = false;
                 });
 
                 audio.addEventListener('tts-error', (event) => {
-                    console.error('TTS Error:', event.detail); // デバッグログ
+                    console.error('TTS Error:', event.detail); 
                     statusIndicator.textContent = `エラー: ${event.detail}`;
                     playButton.disabled = true;
                 });
 
                 audio.addEventListener('play', () => {
-                    console.log('Audio playing'); // デバッグログ
+                    console.log('Audio playing'); 
                     isPlaying = true;
                     playButton.innerHTML = '<i class="fas fa-stop"></i>';
                     statusIndicator.textContent = '再生中';
                 });
 
                 audio.addEventListener('ended', () => {
-                    console.log('Audio ended'); // デバッグログ
+                    console.log('Audio ended'); 
                     isPlaying = false;
                     playButton.innerHTML = '<i class="fas fa-play"></i>';
                     statusIndicator.textContent = '再生可能';
                 });
 
                 audio.addEventListener('error', (e) => {
-                    console.error('Audio error:', e); // デバッグログ
+                    console.error('Audio error:', e); 
                     statusIndicator.textContent = '再生エラー';
                     playButton.disabled = true;
                 });
@@ -238,22 +258,21 @@ document.addEventListener('DOMContentLoaded', async function () {
         messageDiv.appendChild(timestamp);
 
         if (type !== 'user' && TTS_QUEST_API_KEY) {
-            const speakerId = type === 'ai-message-a' ?
-                speakerASelect.value : speakerBSelect.value;
-            const audioControl = createAudioControl(text, speakerId);
+            const styleId = type === 'ai-message-a' ? 
+                styleASelect.value : styleBSelect.value;
+            const audioControl = createAudioControl(text, styleId);
             messageDiv.appendChild(audioControl);
         }
 
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
-        return messageDiv; // Return the messageDiv element
+        return messageDiv;
     }
 
     async function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
 
-        // Add user message
         addMessage(message, 'user');
         userInput.value = '';
 
@@ -268,7 +287,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             const data = await response.json();
             if (response.ok) {
-                // Add speaker A's response and wait for audio completion
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
                 const speakerAAudio = speakerAMessage.querySelector('.audio-control');
                 if (speakerAAudio) {
@@ -276,7 +294,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                         const audio = speakerAAudio.querySelector('button');
                         const statusIndicator = speakerAAudio.querySelector('.status-indicator');
 
-                        // Automatically play speaker A's audio
                         audio.click();
 
                         const checkStatus = setInterval(() => {
@@ -286,7 +303,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                             }
                         }, 1000);
 
-                        // Timeout after 30 seconds
                         setTimeout(() => {
                             clearInterval(checkStatus);
                             resolve();
@@ -294,7 +310,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                     });
                 }
 
-                // After speaker A's audio completes, add speaker B's response
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
                 const speakerBAudio = speakerBMessage.querySelector('.audio-control');
                 if (speakerBAudio) {
@@ -302,13 +317,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                         const audio = speakerBAudio.querySelector('button');
                         const statusIndicator = speakerBAudio.querySelector('.status-indicator');
 
-                        // Calculate wait time based on speaker A's text length (0.25 second per character)
                         const waitTimeMs = data.speaker_a.length * 250;
-                        console.log(`Waiting ${waitTimeMs}ms before playing speaker B's audio`); // デバッグログ
+                        console.log(`Waiting ${waitTimeMs}ms before playing speaker B's audio`);
 
-                        // Wait for calculated time before playing speaker B's audio
                         setTimeout(() => {
-                            // Automatically play speaker B's audio
                             audio.click();
 
                             const checkStatus = setInterval(() => {
@@ -318,12 +330,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 }
                             }, 1000);
 
-                            // Timeout after 30 seconds
                             setTimeout(() => {
                                 clearInterval(checkStatus);
                                 resolve();
                             }, 30000);
-                        }, waitTimeMs); // 文字数×0.25秒待ってから再生開始
+                        }, waitTimeMs);
                     });
                 }
 
