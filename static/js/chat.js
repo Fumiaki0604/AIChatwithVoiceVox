@@ -3,18 +3,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
 
-    // Speaker selects
-    const speakerASelect = document.getElementById('speaker-a');
-    const speakerBSelect = document.getElementById('speaker-b');
-    const styleASelect = document.getElementById('style-a');
-    const styleBSelect = document.getElementById('style-b');
-
-    // Store speakers and styles data
-    let speakersData = null;
-    let currentStyles = {
-        a: [],
-        b: []
-    };
+    // Set default speaker IDs
+    const SPEAKER_A_ID = 1; // ずんだもん（あまあま）
+    const SPEAKER_B_ID = 2; // 四国めたん（ノーマル）
 
     // Fetch TTS Quest API Key from server
     let TTS_QUEST_API_KEY = '';
@@ -31,67 +22,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('Error fetching TTS API key:', error);
     }
 
-    // Load speakers
-    try {
-        const response = await fetch('/get-speakers');
-        speakersData = await response.json();
-
-        // Populate speaker selects
-        const populateSpeakers = (select) => {
-            speakersData.speakers.forEach(speaker => {
-                const option = document.createElement('option');
-                option.value = speaker.uuid;
-                option.textContent = speaker.name;
-                select.appendChild(option);
-            });
-        };
-
-        populateSpeakers(speakerASelect);
-        populateSpeakers(speakerBSelect);
-
-        // Set default speakers
-        speakerASelect.value = speakersData.speakers.find(s => s.name === 'ずんだもん')?.uuid || speakerASelect.value;
-        speakerBSelect.value = speakersData.speakers.find(s => s.name === '四国めたん')?.uuid || speakerBSelect.value;
-
-        updateStyles('a');
-        updateStyles('b');
-    } catch (error) {
-        console.error('Error loading speakers:', error);
-    }
-
-    function updateStyles(speaker) {
-        const speakerSelect = speaker === 'a' ? speakerASelect : speakerBSelect;
-        const styleSelect = speaker === 'a' ? styleASelect : styleBSelect;
-        const speakerId = speakerSelect.value;
-
-        // Clear current options
-        styleSelect.innerHTML = '';
-
-        // Get styles for selected speaker
-        const styles = speakersData.styles[speakerId] || [];
-        currentStyles[speaker] = styles;
-
-        // Add new options
-        styles.forEach(style => {
-            const option = document.createElement('option');
-            option.value = style.id;
-            option.textContent = style.name;
-            styleSelect.appendChild(option);
-        });
-
-        // Select first style
-        if (styles.length > 0) {
-            styleSelect.value = styles[0].id;
-        }
-    }
-
-    // Add event listeners for speaker selection
-    speakerASelect.addEventListener('change', () => updateStyles('a'));
-    speakerBSelect.addEventListener('change', () => updateStyles('b'));
-
     function getCurrentTime() {
         const now = new Date();
         return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function playAudio(text, speakerId) {
+        if (!text) return;
+        console.log('Playing audio with speaker:', speakerId);
+        var audio = new TtsQuestV3Voicevox(speakerId, text, '');  // API keyはoptional
+        audio.play();
     }
 
     function addMessage(text, type) {
@@ -109,22 +49,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         timestamp.textContent = getCurrentTime();
         messageDiv.appendChild(timestamp);
 
-        if (type !== 'user' && TTS_QUEST_API_KEY) {
+        if (type !== 'user') {
             const audioControl = document.createElement('div');
             audioControl.classList.add('audio-control');
 
             const playButton = document.createElement('button');
             playButton.innerHTML = '<i class="fas fa-play"></i>';
+            playButton.classList.add('btn', 'btn-sm', 'btn-outline-primary');
 
-            const speakerId = type === 'ai-message-a' ?
-                styleASelect.value : styleBSelect.value;
+            const speakerId = type === 'ai-message-a' ? SPEAKER_A_ID : SPEAKER_B_ID;
 
             playButton.addEventListener('click', () => {
-                console.log('Playing audio with speaker ID:', speakerId);
-                const audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
-                audio.play().catch(error => {
-                    console.error('Audio playback error:', error);
-                });
+                console.log('Play button clicked for:', type);
+                playAudio(text, speakerId);
             });
 
             audioControl.appendChild(playButton);

@@ -22,40 +22,11 @@ def index():
 @app.route('/get-tts-key')
 def get_tts_key():
     tts_key = os.environ.get('TTS_QUEST_API_KEY')
+    logger.debug(f'TTS Quest API key exists: {bool(tts_key)}')  # ログ追加（値は出力しない）
     if not tts_key:
         logger.error('TTS Quest API key not configured')
         return jsonify({'error': 'TTS Quest API key not configured'}), 500
-    logger.debug('TTS Quest API key retrieved successfully')
     return jsonify({'key': tts_key})
-
-@app.route('/get-speakers')
-def get_speakers():
-    try:
-        speakers = []
-        styles_map = {}
-
-        for speaker in VOICEVOX_SPEAKERS:
-            speaker_name = speaker['name']
-            speakers.append({
-                'name': speaker_name,
-                'uuid': speaker['speaker_uuid']
-            })
-
-            styles_map[speaker['speaker_uuid']] = [
-                {
-                    'id': style['id'],
-                    'name': style['name']
-                } for style in speaker['styles']
-            ]
-
-        logger.debug('Speaker data retrieved successfully')
-        return jsonify({
-            'speakers': speakers,
-            'styles': styles_map
-        })
-    except Exception as e:
-        logger.error(f'Error retrieving speaker data: {str(e)}')
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/chat', methods=['POST'])
 def chat():
