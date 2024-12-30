@@ -76,13 +76,13 @@ class TtsQuestV3Voicevox extends Audio {
 
     handleError(error) {
         console.error('Error in TTS generation:', error);
-        this.dispatchEvent(new CustomEvent('tts-error', { 
+        this.dispatchEvent(new CustomEvent('tts-error', {
             detail: error.message || '音声生成中にエラーが発生しました'
         }));
     }
 }
 
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
@@ -246,6 +246,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        return messageDiv; // Return the messageDiv element
     }
 
     async function sendMessage() {
@@ -267,8 +268,33 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const data = await response.json();
             if (response.ok) {
-                // Add AI responses
-                addMessage(data.speaker_a, 'ai-message-a');
+                // Add speaker A's response and wait for audio completion
+                const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
+                const speakerAAudio = speakerAMessage.querySelector('.audio-control');
+                if (speakerAAudio) {
+                    await new Promise((resolve, reject) => {
+                        const audio = speakerAAudio.querySelector('button');
+                        const statusIndicator = speakerAAudio.querySelector('.status-indicator');
+
+                        // Automatically play speaker A's audio
+                        audio.click();
+
+                        const checkStatus = setInterval(() => {
+                            if (statusIndicator.textContent === '再生可能' && !audio.disabled) {
+                                clearInterval(checkStatus);
+                                resolve();
+                            }
+                        }, 1000);
+
+                        // Timeout after 30 seconds
+                        setTimeout(() => {
+                            clearInterval(checkStatus);
+                            resolve();
+                        }, 30000);
+                    });
+                }
+
+                // After speaker A's audio completes, add speaker B's response
                 addMessage(data.speaker_b, 'ai-message-b');
             } else {
                 addMessage('エラーが発生しました: ' + data.error, 'error');
@@ -279,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     sendButton.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', function(e) {
+    userInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             sendMessage();
         }
