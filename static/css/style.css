@@ -1,6 +1,5 @@
 :root {
     --user-message-color: #98e165;
-    --ai-message-color: #fff;
     --chat-bg-color: #eee;
 }
 
@@ -57,7 +56,7 @@ body {
 }
 
 .ai-message-b .message-content {
-    background-color: #fff3e0;
+    background-color: #ffe0b2;
     border-top-left-radius: 0;
     color: #000;
 }
