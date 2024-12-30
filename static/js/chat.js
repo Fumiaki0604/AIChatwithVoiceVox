@@ -1,24 +1,31 @@
 class TtsQuestV3Voicevox extends Audio {
     constructor(speakerId, text, ttsQuestApiKey) {
         super();
-        var params = {};
-        params['key'] = ttsQuestApiKey;
-        params['speaker'] = speakerId;
-        params['text'] = text;
-        const query = new URLSearchParams(params);
-        this.#main(this, query);
-
-        // Add error handling
-        this.onerror = () => {
-            console.error('Audio playback error occurred');
-            this.dispatchEvent(new CustomEvent('tts-error'));
-        };
+        this.speakerId = speakerId;
+        this.text = text;
+        this.ttsQuestApiKey = ttsQuestApiKey;
+        this.isInitialized = false;
+        this.retryCount = 0;
+        this.maxRetries = 5;
+        this.initialize();
     }
 
-    #main(owner, query) {
-        if (owner.src.length > 0) return;
-        var apiUrl = 'https://api.tts.quest/v3/voicevox/synthesis';
-        owner.dispatchEvent(new CustomEvent('tts-loading'));
+    initialize() {
+        const params = {
+            key: this.ttsQuestApiKey,
+            speaker: this.speakerId,
+            text: this.text
+        };
+        const query = new URLSearchParams(params);
+        this.startGeneration(query);
+    }
+
+    startGeneration(query) {
+        if (this.src && this.src.length > 0) return;
+
+        const apiUrl = 'https://api.tts.quest/v3/voicevox/synthesis';
+        this.dispatchEvent(new CustomEvent('tts-loading'));
+        console.log('Starting TTS generation...'); // デバッグログ
 
         fetch(apiUrl + '?' + query.toString())
             .then(response => {
@@ -29,29 +36,49 @@ class TtsQuestV3Voicevox extends Audio {
             })
             .then(response => {
                 console.log('TTS API Response:', response); // デバッグログ
-                if (typeof response.retryAfter !== 'undefined') {
-                    setTimeout(() => owner.#main(owner, query), 1000 * (1 + response.retryAfter));
-                }
-                else if (typeof response.mp3StreamingUrl !== 'undefined') {
-                    owner.src = response.mp3StreamingUrl;
-                    // プリロードを設定
-                    owner.preload = 'auto';
-                    // ロード完了イベントを追加
-                    owner.oncanplaythrough = () => {
-                        owner.dispatchEvent(new CustomEvent('tts-ready'));
-                    };
-                }
-                else if (typeof response.errorMessage !== 'undefined') {
-                    throw new Error(response.errorMessage);
-                }
-                else {
-                    throw new Error("serverError");
-                }
+                this.handleApiResponse(response, query);
             })
             .catch(error => {
                 console.error('TTS API Error:', error);
-                owner.dispatchEvent(new CustomEvent('tts-error', { detail: error.message }));
+                this.handleError(error);
             });
+    }
+
+    handleApiResponse(response, query) {
+        if (response.retryAfter !== undefined) {
+            if (this.retryCount >= this.maxRetries) {
+                throw new Error('最大リトライ回数を超えました');
+            }
+            console.log(`Retrying after ${response.retryAfter} seconds...`); // デバッグログ
+            this.retryCount++;
+            setTimeout(() => this.startGeneration(query), 1000 * (1 + response.retryAfter));
+        }
+        else if (response.mp3StreamingUrl) {
+            console.log('Received MP3 URL:', response.mp3StreamingUrl); // デバッグログ
+            this.src = response.mp3StreamingUrl;
+            this.preload = 'auto';
+
+            this.oncanplaythrough = () => {
+                console.log('Audio is ready to play'); // デバッグログ
+                if (!this.isInitialized) {
+                    this.isInitialized = true;
+                    this.dispatchEvent(new CustomEvent('tts-ready'));
+                }
+            };
+        }
+        else if (response.errorMessage) {
+            throw new Error(response.errorMessage);
+        }
+        else {
+            throw new Error('不明なサーバーエラー');
+        }
+    }
+
+    handleError(error) {
+        console.error('Error in TTS generation:', error);
+        this.dispatchEvent(new CustomEvent('tts-error', { 
+            detail: error.message || '音声生成中にエラーが発生しました'
+        }));
     }
 }
 
@@ -106,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function createAudioControl(text, speakerId) {
+    const createAudioControl = (text, speakerId) => {
         const audioControl = document.createElement('div');
         audioControl.classList.add('audio-control');
 
@@ -133,13 +160,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 audio.addEventListener('tts-ready', () => {
                     console.log('TTS Ready!'); // デバッグログ
-                    statusIndicator.textContent = '';
+                    statusIndicator.textContent = '再生可能';
                     playButton.disabled = false;
                 });
 
                 audio.addEventListener('tts-error', (event) => {
-                    console.log('TTS Error:', event.detail); // デバッグログ
-                    statusIndicator.textContent = 'エラーが発生しました';
+                    console.error('TTS Error:', event.detail); // デバッグログ
+                    statusIndicator.textContent = `エラー: ${event.detail}`;
                     playButton.disabled = true;
                 });
 
@@ -147,16 +174,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                     console.log('Audio playing'); // デバッグログ
                     isPlaying = true;
                     playButton.innerHTML = '<i class="fas fa-stop"></i>';
+                    statusIndicator.textContent = '再生中';
                 });
 
                 audio.addEventListener('ended', () => {
                     console.log('Audio ended'); // デバッグログ
                     isPlaying = false;
                     playButton.innerHTML = '<i class="fas fa-play"></i>';
+                    statusIndicator.textContent = '再生可能';
                 });
 
                 audio.addEventListener('error', (e) => {
                     console.error('Audio error:', e); // デバッグログ
+                    statusIndicator.textContent = '再生エラー';
+                    playButton.disabled = true;
                 });
             }
             return audio;
@@ -168,6 +199,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 audio.currentTime = 0;
                 isPlaying = false;
                 playButton.innerHTML = '<i class="fas fa-play"></i>';
+                statusIndicator.textContent = '再生可能';
                 return;
             }
 
@@ -176,17 +208,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 audioInstance.play().catch(error => {
                     console.error('Playback error:', error);
                     statusIndicator.textContent = '再生エラー';
+                    playButton.disabled = true;
                 });
             } catch (error) {
                 console.error('Play method error:', error);
                 statusIndicator.textContent = '再生エラー';
+                playButton.disabled = true;
             }
         });
 
         audioControl.appendChild(playButton);
         audioControl.appendChild(statusIndicator);
         return audioControl;
-    }
+    };
 
     function addMessage(text, type) {
         const messageDiv = document.createElement('div');
