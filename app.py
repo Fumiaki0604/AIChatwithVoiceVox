@@ -22,7 +22,9 @@ def index():
 @app.route('/get-tts-key')
 def get_tts_key():
     tts_key = os.environ.get('TTS_QUEST_API_KEY')
+    logging.debug(f"TTS Quest API key available: {bool(tts_key)}")
     if not tts_key:
+        logging.error("TTS Quest API key not configured")
         return jsonify({'error': 'TTS Quest API key not configured'}), 500
     return jsonify({'key': tts_key})
 
