@@ -302,8 +302,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                         const audio = speakerBAudio.querySelector('button');
                         const statusIndicator = speakerBAudio.querySelector('.status-indicator');
 
-                        // Calculate wait time based on speaker A's text length (0.5 second per character)
-                        const waitTimeMs = data.speaker_a.length * 500;
+                        // Calculate wait time based on speaker A's text length (0.25 second per character)
+                        const waitTimeMs = data.speaker_a.length * 250;
                         console.log(`Waiting ${waitTimeMs}ms before playing speaker B's audio`); // デバッグログ
 
                         // Wait for calculated time before playing speaker B's audio
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 clearInterval(checkStatus);
                                 resolve();
                             }, 30000);
-                        }, waitTimeMs); // 文字数×0.5秒待ってから再生開始
+                        }, waitTimeMs); // 文字数×0.25秒待ってから再生開始
                     });
                 }
 
