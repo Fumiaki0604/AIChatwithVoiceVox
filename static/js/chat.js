@@ -21,14 +21,25 @@ class TtsQuestV3Voicevox extends Audio {
         owner.dispatchEvent(new CustomEvent('tts-loading'));
 
         fetch(apiUrl + '?' + query.toString())
-            .then(response => response.json())
             .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(response => {
+                console.log('TTS API Response:', response); // デバッグログ
                 if (typeof response.retryAfter !== 'undefined') {
-                    setTimeout(owner.#main, 1000 * (1 + response.retryAfter), owner, query);
+                    setTimeout(() => owner.#main(owner, query), 1000 * (1 + response.retryAfter));
                 }
                 else if (typeof response.mp3StreamingUrl !== 'undefined') {
                     owner.src = response.mp3StreamingUrl;
-                    owner.dispatchEvent(new CustomEvent('tts-ready'));
+                    // プリロードを設定
+                    owner.preload = 'auto';
+                    // ロード完了イベントを追加
+                    owner.oncanplaythrough = () => {
+                        owner.dispatchEvent(new CustomEvent('tts-ready'));
+                    };
                 }
                 else if (typeof response.errorMessage !== 'undefined') {
                     throw new Error(response.errorMessage);
@@ -105,9 +116,51 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const statusIndicator = document.createElement('span');
         statusIndicator.classList.add('status-indicator');
+        statusIndicator.textContent = '準備中...';
 
         let audio = null;
         let isPlaying = false;
+
+        const initializeAudio = () => {
+            if (!audio) {
+                audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
+
+                audio.addEventListener('tts-loading', () => {
+                    console.log('TTS Loading...'); // デバッグログ
+                    statusIndicator.textContent = '音声生成中...';
+                    playButton.disabled = true;
+                });
+
+                audio.addEventListener('tts-ready', () => {
+                    console.log('TTS Ready!'); // デバッグログ
+                    statusIndicator.textContent = '';
+                    playButton.disabled = false;
+                });
+
+                audio.addEventListener('tts-error', (event) => {
+                    console.log('TTS Error:', event.detail); // デバッグログ
+                    statusIndicator.textContent = 'エラーが発生しました';
+                    playButton.disabled = true;
+                });
+
+                audio.addEventListener('play', () => {
+                    console.log('Audio playing'); // デバッグログ
+                    isPlaying = true;
+                    playButton.innerHTML = '<i class="fas fa-stop"></i>';
+                });
+
+                audio.addEventListener('ended', () => {
+                    console.log('Audio ended'); // デバッグログ
+                    isPlaying = false;
+                    playButton.innerHTML = '<i class="fas fa-play"></i>';
+                });
+
+                audio.addEventListener('error', (e) => {
+                    console.error('Audio error:', e); // デバッグログ
+                });
+            }
+            return audio;
+        };
 
         playButton.addEventListener('click', () => {
             if (isPlaying) {
@@ -118,37 +171,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            if (!audio) {
-                audio = new TtsQuestV3Voicevox(speakerId, text, TTS_QUEST_API_KEY);
-
-                audio.addEventListener('tts-loading', () => {
-                    statusIndicator.textContent = '音声生成中...';
-                    playButton.disabled = true;
+            const audioInstance = initializeAudio();
+            try {
+                audioInstance.play().catch(error => {
+                    console.error('Playback error:', error);
+                    statusIndicator.textContent = '再生エラー';
                 });
-
-                audio.addEventListener('tts-ready', () => {
-                    statusIndicator.textContent = '';
-                    playButton.disabled = false;
-                });
-
-                audio.addEventListener('tts-error', (event) => {
-                    statusIndicator.textContent = 'エラーが発生しました';
-                    playButton.disabled = true;
-                    console.error('TTS Error:', event.detail);
-                });
-
-                audio.addEventListener('play', () => {
-                    isPlaying = true;
-                    playButton.innerHTML = '<i class="fas fa-stop"></i>';
-                });
-
-                audio.addEventListener('ended', () => {
-                    isPlaying = false;
-                    playButton.innerHTML = '<i class="fas fa-play"></i>';
-                });
+            } catch (error) {
+                console.error('Play method error:', error);
+                statusIndicator.textContent = '再生エラー';
             }
-
-            audio.play();
         });
 
         audioControl.appendChild(playButton);
