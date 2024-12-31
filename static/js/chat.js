@@ -323,6 +323,9 @@ document.addEventListener('DOMContentLoaded', async function () {
                 if (speakerA && speakerA.name === 'ずんだもん') {
                     aiIcon.src = '/static/assets/zunda_icon.png';
                     aiIcon.alt = 'ずんだもん';
+                } else if (speakerA && speakerA.name === '四国めたん') {
+                    aiIcon.src = '/static/assets/metan_icon.png';
+                    aiIcon.alt = '四国めたん';
                 } else {
                     aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
                     aiIcon.alt = speakerA ? speakerA.name : 'Speaker A';
