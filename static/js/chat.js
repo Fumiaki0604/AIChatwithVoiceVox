@@ -92,6 +92,39 @@ document.addEventListener('DOMContentLoaded', async function () {
     let TTS_QUEST_API_KEY = '';
     let currentTheme = localStorage.getItem('theme') || 'light';
 
+    // Create standing character elements
+    const leftCharacter = document.createElement('div');
+    leftCharacter.classList.add('standing-character', 'left');
+    const rightCharacter = document.createElement('div');
+    rightCharacter.classList.add('standing-character', 'right');
+    document.body.appendChild(leftCharacter);
+    document.body.appendChild(rightCharacter);
+
+    // Function to update standing characters
+    function updateStandingCharacters() {
+        const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
+        const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
+
+        // Update left character (Speaker A)
+        if (speakerA && speakerA.name === '四国めたん') {
+            leftCharacter.innerHTML = '<img src="/static/assets/standing_metan.png" alt="四国めたん">';
+        } else {
+            leftCharacter.innerHTML = '';
+        }
+
+        // Update right character (Speaker B)
+        if (speakerB && speakerB.name === '四国めたん') {
+            rightCharacter.innerHTML = '<img src="/static/assets/standing_metan.png" alt="四国めたん">';
+        } else {
+            rightCharacter.innerHTML = '';
+        }
+    }
+
+    // Add event listeners for speaker selection changes
+    speakerASelect.addEventListener('change', updateStandingCharacters);
+    speakerBSelect.addEventListener('change', updateStandingCharacters);
+
+
     // Initialize theme
     document.documentElement.setAttribute('data-theme', currentTheme);
     updateThemeToggleButton();
@@ -158,9 +191,16 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         updateStyles(speakerASelect.value, styleASelect);
         updateStyles(speakerBSelect.value, styleBSelect);
+        updateStandingCharacters(); // Initialize standing characters
 
-        speakerASelect.addEventListener('change', () => updateStyles(speakerASelect.value, styleASelect));
-        speakerBSelect.addEventListener('change', () => updateStyles(speakerBSelect.value, styleBSelect));
+        speakerASelect.addEventListener('change', () => {
+            updateStyles(speakerASelect.value, styleASelect);
+            updateStandingCharacters();
+        });
+        speakerBSelect.addEventListener('change', () => {
+            updateStyles(speakerBSelect.value, styleBSelect);
+            updateStandingCharacters();
+        });
 
     } catch (error) {
         console.error('Error loading speakers:', error);
