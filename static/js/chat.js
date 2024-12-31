@@ -7,7 +7,72 @@ class TtsQuestV3Voicevox extends Audio {
         this.isInitialized = false;
         this.retryCount = 0;
         this.maxRetries = 5;
+        this.audioContext = null;
+        this.analyser = null;
+        this.dataArray = null;
+        this.source = null;
+        this.isAnalyzing = false;
+        this.lipSyncCallback = null;
         this.initialize();
+    }
+
+    setupAudioAnalysis() {
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 2048;
+            this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+            // Connect audio to analyser
+            this.source = this.audioContext.createMediaElementSource(this);
+            this.source.connect(this.analyser);
+            this.analyser.connect(this.audioContext.destination);
+        }
+    }
+
+    startAnalysis() {
+        if (!this.isAnalyzing) {
+            this.isAnalyzing = true;
+            this.analyzeAudio();
+        }
+    }
+
+    stopAnalysis() {
+        this.isAnalyzing = false;
+    }
+
+    analyzeAudio() {
+        if (!this.isAnalyzing) return;
+
+        this.analyser.getByteFrequencyData(this.dataArray);
+
+        // 特定の周波数帯域の平均値を計算
+        const bassSum = this.dataArray.slice(0, 10).reduce((a, b) => a + b, 0);
+        const bassAvg = bassSum / 10;
+
+        // 音量レベルに応じて4段階の口の開き具合を決定
+        let mouthState;
+        if (bassAvg < 50) {
+            mouthState = 'close';
+        } else if (bassAvg < 100) {
+            mouthState = 'close_middle';
+        } else if (bassAvg < 150) {
+            mouthState = 'open_middle';
+        } else {
+            mouthState = 'open';
+        }
+
+        // コールバック関数が設定されている場合は実行
+        if (this.lipSyncCallback) {
+            this.lipSyncCallback(mouthState);
+        }
+
+        // 次のアニメーションフレームをリクエスト
+        requestAnimationFrame(() => this.analyzeAudio());
+    }
+
+    setLipSyncCallback(callback) {
+        this.lipSyncCallback = callback;
     }
 
     initialize() {
@@ -18,8 +83,26 @@ class TtsQuestV3Voicevox extends Audio {
         };
         const query = new URLSearchParams(params);
         this.startGeneration(query);
+
+        // Audio要素のイベントハンドラを設定
+        this.addEventListener('play', () => {
+            if (this.audioContext && this.audioContext.state === 'suspended') {
+                this.audioContext.resume();
+            }
+            this.setupAudioAnalysis();
+            this.startAnalysis();
+        });
+
+        this.addEventListener('pause', () => {
+            this.stopAnalysis();
+        });
+
+        this.addEventListener('ended', () => {
+            this.stopAnalysis();
+        });
     }
 
+    // 既存のメソッドは変更なし
     startGeneration(query) {
         if (this.src && this.src.length > 0) return;
 
@@ -110,8 +193,10 @@ document.addEventListener('DOMContentLoaded', async function () {
             leftCharacter.innerHTML = `
                 <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
                 <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                <img class="standing-character-mouth" src="/static/assets/metan_mouse_close.png" alt="四国めたん口">
             `;
-            setupBlinking(leftCharacter);
+            const updateMouth = setupBlinking(leftCharacter);
+            //audioControl.setLipSyncCallback(updateMouth); // This line was misplaced and is now correctly placed within the sendMessage function
         } else {
             leftCharacter.innerHTML = '';
         }
@@ -121,6 +206,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             rightCharacter.innerHTML = `
                 <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
                 <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                <img class="standing-character-mouth" src="/static/assets/metan_mouse_close.png" alt="四国めたん口">
             `;
             setupBlinking(rightCharacter);
         } else {
@@ -237,6 +323,17 @@ document.addEventListener('DOMContentLoaded', async function () {
         const initializeAudio = () => {
             if (!audio) {
                 audio = new TtsQuestV3Voicevox(styleId, text, TTS_QUEST_API_KEY);
+
+                // リップシンクコールバックの設定
+                const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
+                const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
+
+                if ((styleId === styleASelect.value && speakerA?.name === '四国めたん') ||
+                    (styleId === styleBSelect.value && speakerB?.name === '四国めたん')) {
+                    const character = styleId === styleASelect.value ? leftCharacter : rightCharacter;
+                    const updateMouth = setupBlinking(character);
+                    audio.setLipSyncCallback(updateMouth);
+                }
 
                 audio.addEventListener('tts-loading', () => {
                     console.log('TTS Loading...');
@@ -501,6 +598,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // まばたきアニメーションの設定関数を修正
     function setupBlinking(characterElement) {
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
+        const mouthImage = characterElement.querySelector('.standing-character-mouth');
         let isBlinking = false;
 
         function blink() {
@@ -520,7 +618,29 @@ document.addEventListener('DOMContentLoaded', async function () {
             }, 100);
         }
 
+        // 口パクアニメーションの制御関数
+        function updateMouth(mouthState) {
+            if (!mouthImage) return;
+
+            switch (mouthState) {
+                case 'close':
+                    mouthImage.src = '/static/assets/metan_mouse_close.png';
+                    break;
+                case 'close_middle':
+                    mouthImage.src = '/static/assets/metan_mouse_close_middle.png';
+                    break;
+                case 'open_middle':
+                    mouthImage.src = '/static/assets/metan_mouse_open_middle.png';
+                    break;
+                case 'open':
+                    mouthImage.src = '/static/assets/metan_mouse_open.png';
+                    break;
+            }
+        }
+
         // 初回まばたきを0.5-2秒後に開始
         setTimeout(blink, Math.random() * 1500 + 500);
+
+        return updateMouth; // 口パク制御関数を返す
     }
 });
