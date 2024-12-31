@@ -200,7 +200,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 <img class="standing-character-mouth" src="/static/assets/metan_mouse_close.png" alt="四国めたん口">
             `;
             const updateMouth = setupBlinking(leftCharacter);
-            //audioControl.setLipSyncCallback(updateMouth); // This line was misplaced and is now correctly placed within the sendMessage function
         } else {
             leftCharacter.innerHTML = '';
         }
