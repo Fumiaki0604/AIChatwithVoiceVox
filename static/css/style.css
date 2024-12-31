@@ -150,6 +150,7 @@ body {
     background-color: var(--speaker-select-bg);
     border-radius: 0.5rem;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 100%; /* Added width */
 }
 
 .speaker-select .form-select {
@@ -197,8 +198,12 @@ body {
 
 /* Container width adjustment */
 .container {
-    max-width: 800px !important;
+    max-width: 900px !important;
     width: 100%;
     margin: 0 auto;
     padding: 1.5rem;
+}
+
+.chat-container {
+    width: 100%;
 }
