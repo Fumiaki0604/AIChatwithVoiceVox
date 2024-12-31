@@ -35,8 +35,7 @@ body {
 }
 
 .chat-container {
-    max-width: 800px;
-    margin: 0 auto;
+    margin: 1rem auto;
     padding: 1rem;
 }
 
@@ -146,7 +145,7 @@ body {
 }
 
 .speaker-select {
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
     padding: 1.5rem;
     background-color: var(--speaker-select-bg);
     border-radius: 0.5rem;
@@ -194,4 +193,12 @@ body {
 
 .theme-toggle i {
     margin-right: 0.5rem;
+}
+
+/* Container width adjustment */
+.container {
+    max-width: 800px !important;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0;
 }
