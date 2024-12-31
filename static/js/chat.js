@@ -606,21 +606,22 @@ document.addEventListener('DOMContentLoaded', async function () {
         let blinkTimeout = null;
         let nextBlinkTimeout = null;
 
-        function blink() {
+        function toggleEyes() {
             if (isBlinking) return;
 
             isBlinking = true;
             eyesImage.src = '/static/assets/metan_eye_close.png';
 
-            // まばたきの持続時間（100ms）
+            // まばたきの持続時間（150-250ms）をランダムに設定
+            const blinkDuration = Math.random() * 100 + 150;
             blinkTimeout = setTimeout(() => {
                 eyesImage.src = '/static/assets/metan_eye_open.png';
                 isBlinking = false;
 
-                // 次のまばたきまでの時間をランダムに設定（2-6秒）
-                const nextBlinkDelay = Math.random() * 4000 + 2000;
-                nextBlinkTimeout = setTimeout(blink, nextBlinkDelay);
-            }, 100);
+                // 次のまばたきまでの時間をランダムに設定（2.5-3.5秒）
+                const nextBlinkDelay = Math.random() * 1000 + 2500;
+                nextBlinkTimeout = setTimeout(toggleEyes, nextBlinkDelay);
+            }, blinkDuration);
         }
 
         // Cleanup function
@@ -650,7 +651,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         // 初回まばたきを0.5-2秒後に開始
-        setTimeout(blink, Math.random() * 1500 + 500);
+        setTimeout(toggleEyes, Math.random() * 1500 + 500);
 
         return updateMouth; // 口パク制御関数を返す
     }
