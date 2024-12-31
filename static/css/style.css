@@ -66,43 +66,16 @@ body {
     height: 32px;
     border-radius: 50%;
     overflow: hidden;
-    background-color: var(--speaker-select-bg);
+    background-color: #e0e0e0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid var(--speaker-select-border);
-}
-
-/* Speaker specific icon styles */
-.message-icon.zundamon {
-    background-color: #88c34a;
-    border-color: #558b2f;
-}
-
-.message-icon.metan {
-    background-color: #e91e63;
-    border-color: #ad1457;
-}
-
-.message-icon.tsumugi {
-    background-color: #ff9800;
-    border-color: #ef6c00;
-}
-
-.message-icon.ritsu {
-    background-color: #2196f3;
-    border-color: #1565c0;
 }
 
 .message-icon img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.message-icon img:hover {
-    transform: scale(1.1);
 }
 
 .message-icon i {

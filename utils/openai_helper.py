@@ -19,9 +19,9 @@ def get_chat_response(message, response_type="main_response"):
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": message}
             ],
-            max_tokens=500  # トークン制限を増やして、より長いレスポンスを許可
+            max_tokens=150
         )
-
+        
         return response.choices[0].message.content
     except Exception as e:
         raise Exception(f"Failed to get ChatGPT response: {str(e)}")
