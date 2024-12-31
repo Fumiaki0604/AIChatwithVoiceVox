@@ -52,8 +52,7 @@ class TtsQuestV3Voicevox extends Audio {
             console.log(`Retrying after ${response.retryAfter} seconds...`);
             this.retryCount++;
             setTimeout(() => this.startGeneration(query), 1000 * (1 + response.retryAfter));
-        }
-        else if (response.mp3StreamingUrl) {
+        } else if (response.mp3StreamingUrl) {
             console.log('Received MP3 URL:', response.mp3StreamingUrl);
             this.src = response.mp3StreamingUrl;
             this.preload = 'auto';
@@ -65,11 +64,9 @@ class TtsQuestV3Voicevox extends Audio {
                     this.dispatchEvent(new CustomEvent('tts-ready'));
                 }
             };
-        }
-        else if (response.errorMessage) {
+        } else if (response.errorMessage) {
             throw new Error(response.errorMessage);
-        }
-        else {
+        } else {
             throw new Error('不明なサーバーエラー');
         }
     }
@@ -90,9 +87,30 @@ document.addEventListener('DOMContentLoaded', async function () {
     const speakerBSelect = document.getElementById('speaker-b');
     const styleASelect = document.getElementById('style-a');
     const styleBSelect = document.getElementById('style-b');
-
+    const themeToggle = document.getElementById('theme-toggle');
     let speakers = [];
     let TTS_QUEST_API_KEY = '';
+    let currentTheme = localStorage.getItem('theme') || 'light';
+
+    // Initialize theme
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    updateThemeToggleButton();
+
+    function updateThemeToggleButton() {
+        if (currentTheme === 'dark') {
+            themeToggle.innerHTML = '<i class="fas fa-sun"></i> ライトモード';
+        } else {
+            themeToggle.innerHTML = '<i class="fas fa-moon"></i> ダークモード';
+        }
+    }
+
+    themeToggle.addEventListener('click', () => {
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        localStorage.setItem('theme', currentTheme);
+        updateThemeToggleButton();
+    });
+
 
     try {
         const response = await fetch('/get-tts-key');

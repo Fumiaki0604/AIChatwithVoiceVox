@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +9,10 @@
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
+    <button class="theme-toggle" id="theme-toggle">
+        <i class="fas fa-moon"></i> ダークモード
+    </button>
+
     <div class="container py-4">
         <div class="speaker-select">
             <h3 class="mb-3">音声設定</h3>
