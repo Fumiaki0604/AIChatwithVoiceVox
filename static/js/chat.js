@@ -462,25 +462,26 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     });
 
-    // まばたきアニメーションの設定関数を追加
+    // まばたきアニメーションの設定関数を修正
     function setupBlinking(characterElement) {
+        const eyesImage = characterElement.querySelector('.standing-character-eyes');
         let isBlinking = false;
 
         function blink() {
             if (isBlinking) return;
 
             isBlinking = true;
-            characterElement.classList.add('blinking');
+            eyesImage.src = '/static/assets/metan_eye_close.png';
 
             // まばたきの持続時間（100ms）
             setTimeout(() => {
-                characterElement.classList.remove('blinking');
+                eyesImage.src = '/static/assets/metan_eye_open.png';
                 isBlinking = false;
-            }, 100);
 
-            // 次のまばたきまでの時間をランダムに設定（2-6秒）
-            const nextBlinkDelay = Math.random() * 4000 + 2000;
-            setTimeout(blink, nextBlinkDelay);
+                // 次のまばたきまでの時間をランダムに設定（2-6秒）
+                const nextBlinkDelay = Math.random() * 4000 + 2000;
+                setTimeout(blink, nextBlinkDelay);
+            }, 100);
         }
 
         // 初回まばたきを0.5-2秒後に開始
