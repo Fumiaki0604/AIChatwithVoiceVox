@@ -17,6 +17,7 @@ class TtsQuestV3Voicevox extends Audio {
 
     setupAudioAnalysis() {
         if (!this.audioContext) {
+            console.log('Setting up audio analysis...');
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             this.analyser = this.audioContext.createAnalyser();
             this.analyser.fftSize = 2048;
@@ -26,17 +27,20 @@ class TtsQuestV3Voicevox extends Audio {
             this.source = this.audioContext.createMediaElementSource(this);
             this.source.connect(this.analyser);
             this.analyser.connect(this.audioContext.destination);
+            console.log('Audio analysis setup complete');
         }
     }
 
     startAnalysis() {
         if (!this.isAnalyzing) {
+            console.log('Starting audio analysis...');
             this.isAnalyzing = true;
             this.analyzeAudio();
         }
     }
 
     stopAnalysis() {
+        console.log('Stopping audio analysis...');
         this.isAnalyzing = false;
     }
 
@@ -65,6 +69,7 @@ class TtsQuestV3Voicevox extends Audio {
 
         // Audio要素のイベントハンドラを設定
         this.addEventListener('play', () => {
+            console.log('Audio play event triggered');
             if (this.audioContext && this.audioContext.state === 'suspended') {
                 this.audioContext.resume();
             }
@@ -73,10 +78,12 @@ class TtsQuestV3Voicevox extends Audio {
         });
 
         this.addEventListener('pause', () => {
+            console.log('Audio pause event triggered');
             this.stopAnalysis();
         });
 
         this.addEventListener('ended', () => {
+            console.log('Audio ended event triggered');
             this.stopAnalysis();
         });
     }
