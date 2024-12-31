@@ -265,6 +265,26 @@ document.addEventListener('DOMContentLoaded', async function () {
         messageDiv.classList.add('message');
         messageDiv.classList.add(`${type}-message`);
 
+        // Add icon
+        const iconDiv = document.createElement('div');
+        iconDiv.classList.add('message-icon');
+
+        if (type === 'user') {
+            const userIcon = document.createElement('i');
+            userIcon.classList.add('fas', 'fa-user');
+            iconDiv.appendChild(userIcon);
+        } else {
+            const aiIcon = document.createElement('img');
+            if (type === 'ai-message-a') {
+                aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
+            } else {
+                aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
+            }
+            aiIcon.alt = type === 'ai-message-a' ? 'Speaker A' : 'Speaker B';
+            iconDiv.appendChild(aiIcon);
+        }
+        messageDiv.appendChild(iconDiv);
+
         const contentDiv = document.createElement('div');
         contentDiv.classList.add('message-content');
         contentDiv.textContent = text;
