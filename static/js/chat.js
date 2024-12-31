@@ -12,39 +12,32 @@ class TtsQuestV3Voicevox extends Audio {
         this.dataArray = null;
         this.source = null;
         this.isAnalyzing = false;
+        this.lipSyncCallback = null;
         this.initialize();
     }
 
     setupAudioAnalysis() {
-        try {
-            if (!this.audioContext) {
-                console.log('Setting up audio analysis...');
-                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                this.analyser = this.audioContext.createAnalyser();
-                this.analyser.fftSize = 2048;
-                this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 2048;
+            this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
 
-                // Connect audio to analyser
-                this.source = this.audioContext.createMediaElementSource(this);
-                this.source.connect(this.analyser);
-                this.analyser.connect(this.audioContext.destination);
-                console.log('Audio analysis setup complete');
-            }
-        } catch (error) {
-            console.error('Error setting up audio analysis:', error);
+            // Connect audio to analyser
+            this.source = this.audioContext.createMediaElementSource(this);
+            this.source.connect(this.analyser);
+            this.analyser.connect(this.audioContext.destination);
         }
     }
 
     startAnalysis() {
         if (!this.isAnalyzing) {
-            console.log('Starting audio analysis...');
             this.isAnalyzing = true;
             this.analyzeAudio();
         }
     }
 
     stopAnalysis() {
-        console.log('Stopping audio analysis...');
         this.isAnalyzing = false;
     }
 
@@ -53,13 +46,33 @@ class TtsQuestV3Voicevox extends Audio {
 
         this.analyser.getByteFrequencyData(this.dataArray);
 
-        // デバッグ用：周波数データの表示
+        // 特定の周波数帯域の平均値を計算
         const bassSum = this.dataArray.slice(0, 10).reduce((a, b) => a + b, 0);
         const bassAvg = bassSum / 10;
-        console.log('Bass frequency average:', bassAvg);
+
+        // 音量レベルに応じて4段階の口の開き具合を決定
+        let mouthState;
+        if (bassAvg < 50) {
+            mouthState = 'close';
+        } else if (bassAvg < 100) {
+            mouthState = 'close_middle';
+        } else if (bassAvg < 150) {
+            mouthState = 'open_middle';
+        } else {
+            mouthState = 'open';
+        }
+
+        // コールバック関数が設定されている場合は実行
+        if (this.lipSyncCallback) {
+            this.lipSyncCallback(mouthState);
+        }
 
         // 次のアニメーションフレームをリクエスト
         requestAnimationFrame(() => this.analyzeAudio());
+    }
+
+    setLipSyncCallback(callback) {
+        this.lipSyncCallback = callback;
     }
 
     initialize() {
@@ -73,30 +86,18 @@ class TtsQuestV3Voicevox extends Audio {
 
         // Audio要素のイベントハンドラを設定
         this.addEventListener('play', () => {
-            console.log('Audio play event triggered');
-            // AudioContextのセットアップは最初の再生時に行う
-            if (!this.audioContext) {
-                this.setupAudioAnalysis();
-            }
             if (this.audioContext && this.audioContext.state === 'suspended') {
-                this.audioContext.resume().then(() => {
-                    console.log('AudioContext resumed');
-                    this.startAnalysis();
-                }).catch(error => {
-                    console.error('Error resuming AudioContext:', error);
-                });
-            } else {
-                this.startAnalysis();
+                this.audioContext.resume();
             }
+            this.setupAudioAnalysis();
+            this.startAnalysis();
         });
 
         this.addEventListener('pause', () => {
-            console.log('Audio pause event triggered');
             this.stopAnalysis();
         });
 
         this.addEventListener('ended', () => {
-            console.log('Audio ended event triggered');
             this.stopAnalysis();
         });
     }
@@ -335,9 +336,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                     (styleId === styleBSelect.value && speakerB?.name === '四国めたん')) {
                     const character = styleId === styleASelect.value ? leftCharacter : rightCharacter;
                     const updateMouth = setupBlinking(character);
-                    audio.setLipSyncCallback = function(callback){
-                        this.lipSyncCallback = callback;
-                    };
                     audio.setLipSyncCallback(updateMouth);
                 }
 
