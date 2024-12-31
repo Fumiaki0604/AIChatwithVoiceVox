@@ -185,6 +185,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Function to update standing characters
     function updateStandingCharacters() {
+        // Cleanup existing animations
+        if (leftCharacter.cleanup) leftCharacter.cleanup();
+        if (rightCharacter.cleanup) rightCharacter.cleanup();
+
         const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
         const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
 
@@ -600,6 +604,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
         const mouthImage = characterElement.querySelector('.standing-character-mouth');
         let isBlinking = false;
+        let blinkTimeout = null;
+        let nextBlinkTimeout = null;
 
         function blink() {
             if (isBlinking) return;
@@ -608,15 +614,21 @@ document.addEventListener('DOMContentLoaded', async function () {
             eyesImage.src = '/static/assets/metan_eye_close.png';
 
             // まばたきの持続時間（100ms）
-            setTimeout(() => {
+            blinkTimeout = setTimeout(() => {
                 eyesImage.src = '/static/assets/metan_eye_open.png';
                 isBlinking = false;
 
                 // 次のまばたきまでの時間をランダムに設定（2-6秒）
                 const nextBlinkDelay = Math.random() * 4000 + 2000;
-                setTimeout(blink, nextBlinkDelay);
+                nextBlinkTimeout = setTimeout(blink, nextBlinkDelay);
             }, 100);
         }
+
+        // Cleanup function
+        characterElement.cleanup = () => {
+            if (blinkTimeout) clearTimeout(blinkTimeout);
+            if (nextBlinkTimeout) clearTimeout(nextBlinkTimeout);
+        };
 
         // 口パクアニメーションの制御関数
         function updateMouth(mouthState) {
