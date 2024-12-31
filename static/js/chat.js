@@ -16,18 +16,22 @@ class TtsQuestV3Voicevox extends Audio {
     }
 
     setupAudioAnalysis() {
-        if (!this.audioContext) {
-            console.log('Setting up audio analysis...');
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            this.analyser = this.audioContext.createAnalyser();
-            this.analyser.fftSize = 2048;
-            this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+        try {
+            if (!this.audioContext) {
+                console.log('Setting up audio analysis...');
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.analyser = this.audioContext.createAnalyser();
+                this.analyser.fftSize = 2048;
+                this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
 
-            // Connect audio to analyser
-            this.source = this.audioContext.createMediaElementSource(this);
-            this.source.connect(this.analyser);
-            this.analyser.connect(this.audioContext.destination);
-            console.log('Audio analysis setup complete');
+                // Connect audio to analyser
+                this.source = this.audioContext.createMediaElementSource(this);
+                this.source.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+                console.log('Audio analysis setup complete');
+            }
+        } catch (error) {
+            console.error('Error setting up audio analysis:', error);
         }
     }
 
@@ -70,11 +74,20 @@ class TtsQuestV3Voicevox extends Audio {
         // Audio要素のイベントハンドラを設定
         this.addEventListener('play', () => {
             console.log('Audio play event triggered');
-            if (this.audioContext && this.audioContext.state === 'suspended') {
-                this.audioContext.resume();
+            // AudioContextのセットアップは最初の再生時に行う
+            if (!this.audioContext) {
+                this.setupAudioAnalysis();
             }
-            this.setupAudioAnalysis();
-            this.startAnalysis();
+            if (this.audioContext && this.audioContext.state === 'suspended') {
+                this.audioContext.resume().then(() => {
+                    console.log('AudioContext resumed');
+                    this.startAnalysis();
+                }).catch(error => {
+                    console.error('Error resuming AudioContext:', error);
+                });
+            } else {
+                this.startAnalysis();
+            }
         });
 
         this.addEventListener('pause', () => {
