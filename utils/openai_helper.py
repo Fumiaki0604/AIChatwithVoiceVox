@@ -17,7 +17,7 @@ def get_chat_response(message, response_type="main_response"):
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": message}
             ],
-            max_tokens=150
+            max_tokens=500  # トークン数を増やして、より長い応答を可能に
         )
 
         return response.choices[0].message.content
