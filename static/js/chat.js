@@ -107,14 +107,22 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Update left character (Speaker A)
         if (speakerA && speakerA.name === '四国めたん') {
-            leftCharacter.innerHTML = '<img src="/static/assets/standing_metan.png" alt="四国めたん">';
+            leftCharacter.innerHTML = `
+                <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+            `;
+            setupBlinking(leftCharacter);
         } else {
             leftCharacter.innerHTML = '';
         }
 
         // Update right character (Speaker B)
         if (speakerB && speakerB.name === '四国めたん') {
-            rightCharacter.innerHTML = '<img src="/static/assets/standing_metan.png" alt="四国めたん">';
+            rightCharacter.innerHTML = `
+                <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+            `;
+            setupBlinking(rightCharacter);
         } else {
             rightCharacter.innerHTML = '';
         }
@@ -453,4 +461,29 @@ document.addEventListener('DOMContentLoaded', async function () {
             sendMessage();
         }
     });
+
+    // まばたきアニメーションの設定関数を追加
+    function setupBlinking(characterElement) {
+        let isBlinking = false;
+
+        function blink() {
+            if (isBlinking) return;
+
+            isBlinking = true;
+            characterElement.classList.add('blinking');
+
+            // まばたきの持続時間（100ms）
+            setTimeout(() => {
+                characterElement.classList.remove('blinking');
+                isBlinking = false;
+            }, 100);
+
+            // 次のまばたきまでの時間をランダムに設定（2-6秒）
+            const nextBlinkDelay = Math.random() * 4000 + 2000;
+            setTimeout(blink, nextBlinkDelay);
+        }
+
+        // 初回まばたきを0.5-2秒後に開始
+        setTimeout(blink, Math.random() * 1500 + 500);
+    }
 });
