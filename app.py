@@ -7,9 +7,15 @@ from utils.openai_helper import get_chat_response
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "a-very-secret-key")
+
+# 環境変数の確認とログ出力
+VOICEVOX_API_KEY = os.environ.get("VOICEVOX_API_KEY")
+if not VOICEVOX_API_KEY:
+    logger.warning("VOICEVOX API key is not configured")
 
 # Load VOICEVOX speaker data
 with open('attached_assets/voicebox_speakerID.json', 'r', encoding='utf-8') as f:
@@ -21,12 +27,12 @@ def index():
 
 @app.route('/get-tts-key')
 def get_tts_key():
-    tts_key = os.environ.get('TTS_QUEST_API_KEY')
-    logging.debug(f"TTS Quest API key available: {bool(tts_key)}")
-    if not tts_key:
-        logging.error("TTS Quest API key not configured")
-        return jsonify({'error': 'TTS Quest API key not configured'}), 500
-    return jsonify({'key': tts_key})
+    voicevox_key = os.environ.get('VOICEVOX_API_KEY')
+    logger.debug(f"VOICEVOX API key available: {bool(voicevox_key)}")
+    if not voicevox_key:
+        logger.error("VOICEVOX API key not configured")
+        return jsonify({'error': 'VOICEVOX API key not configured'}), 500
+    return jsonify({'key': voicevox_key})
 
 @app.route('/get-speakers')
 def get_speakers():
@@ -56,5 +62,5 @@ def chat():
         })
 
     except Exception as e:
-        logging.error(f"Error in chat endpoint: {str(e)}")
+        logger.error(f"Error in chat endpoint: {str(e)}")
         return jsonify({'error': str(e)}), 500
