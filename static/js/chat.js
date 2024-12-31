@@ -275,12 +275,28 @@ document.addEventListener('DOMContentLoaded', async function () {
             iconDiv.appendChild(userIcon);
         } else {
             const aiIcon = document.createElement('img');
+            const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
+            const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
+
             if (type === 'ai-message-a') {
-                aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
+                // ずんだもんの場合
+                if (speakerA && speakerA.name === 'ずんだもん') {
+                    aiIcon.src = '/static/assets/zunda_icon.png';
+                    aiIcon.alt = 'ずんだもん';
+                } else {
+                    aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
+                    aiIcon.alt = speakerA ? speakerA.name : 'Speaker A';
+                }
             } else {
-                aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
+                // 四国めたんの場合
+                if (speakerB && speakerB.name === '四国めたん') {
+                    aiIcon.src = '/static/assets/metan_icon.png';
+                    aiIcon.alt = '四国めたん';
+                } else {
+                    aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
+                    aiIcon.alt = speakerB ? speakerB.name : 'Speaker B';
+                }
             }
-            aiIcon.alt = type === 'ai-message-a' ? 'Speaker A' : 'Speaker B';
             iconDiv.appendChild(aiIcon);
         }
         messageDiv.appendChild(iconDiv);
