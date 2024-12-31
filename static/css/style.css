@@ -36,7 +36,7 @@ body {
 
 .chat-container {
     margin: 1rem auto;
-    padding: 1rem;
+    padding: 0;
 }
 
 .chat-messages {
@@ -200,5 +200,5 @@ body {
     max-width: 800px !important;
     width: 100%;
     margin: 0 auto;
-    padding: 0;
+    padding: 1.5rem;
 }
