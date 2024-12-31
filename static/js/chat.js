@@ -17,8 +17,16 @@ class TtsQuestV3Voicevox extends Audio {
     }
 
     setupAudioAnalysis() {
-        if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        try {
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // 既存の接続をクリーンアップ
+            if (this.source) {
+                this.source.disconnect();
+            }
+
             this.analyser = this.audioContext.createAnalyser();
             this.analyser.fftSize = 2048;
             this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
@@ -27,6 +35,10 @@ class TtsQuestV3Voicevox extends Audio {
             this.source = this.audioContext.createMediaElementSource(this);
             this.source.connect(this.analyser);
             this.analyser.connect(this.audioContext.destination);
+
+            console.log('Audio analysis setup completed successfully');
+        } catch (error) {
+            console.error('Error setting up audio analysis:', error);
         }
     }
 
@@ -34,11 +46,13 @@ class TtsQuestV3Voicevox extends Audio {
         if (!this.isAnalyzing) {
             this.isAnalyzing = true;
             this.analyzeAudio();
+            console.log('Audio analysis started');
         }
     }
 
     stopAnalysis() {
         this.isAnalyzing = false;
+        console.log('Audio analysis stopped');
     }
 
     analyzeAudio() {
@@ -73,6 +87,7 @@ class TtsQuestV3Voicevox extends Audio {
 
     setLipSyncCallback(callback) {
         this.lipSyncCallback = callback;
+        console.log('Lip sync callback set');
     }
 
     initialize() {
@@ -86,8 +101,13 @@ class TtsQuestV3Voicevox extends Audio {
 
         // Audio要素のイベントハンドラを設定
         this.addEventListener('play', () => {
+            console.log('Audio play event triggered');
             if (this.audioContext && this.audioContext.state === 'suspended') {
-                this.audioContext.resume();
+                this.audioContext.resume().then(() => {
+                    console.log('AudioContext resumed');
+                }).catch(error => {
+                    console.error('Error resuming AudioContext:', error);
+                });
             }
             this.setupAudioAnalysis();
             this.startAnalysis();
@@ -102,7 +122,7 @@ class TtsQuestV3Voicevox extends Audio {
         });
     }
 
-    // 既存のメソッドは変更なし
+    // 既存のメソッドはそのまま
     startGeneration(query) {
         if (this.src && this.src.length > 0) return;
 
