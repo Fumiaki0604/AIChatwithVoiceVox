@@ -12,7 +12,6 @@ class TtsQuestV3Voicevox extends Audio {
         this.dataArray = null;
         this.source = null;
         this.isAnalyzing = false;
-        this.lipSyncCallback = null;
         this.initialize();
     }
 
@@ -46,33 +45,13 @@ class TtsQuestV3Voicevox extends Audio {
 
         this.analyser.getByteFrequencyData(this.dataArray);
 
-        // 特定の周波数帯域の平均値を計算
+        // デバッグ用：周波数データの表示
         const bassSum = this.dataArray.slice(0, 10).reduce((a, b) => a + b, 0);
         const bassAvg = bassSum / 10;
-
-        // 音量レベルに応じて4段階の口の開き具合を決定
-        let mouthState;
-        if (bassAvg < 50) {
-            mouthState = 'close';
-        } else if (bassAvg < 100) {
-            mouthState = 'close_middle';
-        } else if (bassAvg < 150) {
-            mouthState = 'open_middle';
-        } else {
-            mouthState = 'open';
-        }
-
-        // コールバック関数が設定されている場合は実行
-        if (this.lipSyncCallback) {
-            this.lipSyncCallback(mouthState);
-        }
+        console.log('Bass frequency average:', bassAvg);
 
         // 次のアニメーションフレームをリクエスト
         requestAnimationFrame(() => this.analyzeAudio());
-    }
-
-    setLipSyncCallback(callback) {
-        this.lipSyncCallback = callback;
     }
 
     initialize() {
@@ -336,6 +315,9 @@ document.addEventListener('DOMContentLoaded', async function () {
                     (styleId === styleBSelect.value && speakerB?.name === '四国めたん')) {
                     const character = styleId === styleASelect.value ? leftCharacter : rightCharacter;
                     const updateMouth = setupBlinking(character);
+                    audio.setLipSyncCallback = function(callback){
+                        this.lipSyncCallback = callback;
+                    };
                     audio.setLipSyncCallback(updateMouth);
                 }
 
