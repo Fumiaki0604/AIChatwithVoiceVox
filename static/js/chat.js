@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         messageDiv.classList.add('message');
         messageDiv.classList.add(`${type}-message`);
 
-        // Add icon
+        // Add icon with speaker-specific styles
         const iconDiv = document.createElement('div');
         iconDiv.classList.add('message-icon');
 
@@ -327,28 +327,48 @@ document.addEventListener('DOMContentLoaded', async function () {
             const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
 
             if (type === 'ai-message-a') {
-                // ずんだもんの場合
-                if (speakerA && speakerA.name === 'ずんだもん') {
-                    aiIcon.src = '/static/assets/zunda_icon.png';
-                    aiIcon.alt = 'ずんだもん';
-                } else if (speakerA && speakerA.name === '四国めたん') {
-                    aiIcon.src = '/static/assets/metan_icon.png';
-                    aiIcon.alt = '四国めたん';
-                } else {
-                    aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
-                    aiIcon.alt = speakerA ? speakerA.name : 'Speaker A';
+                if (speakerA) {
+                    // Add speaker-specific class
+                    iconDiv.classList.add(getSpeakerClass(speakerA.name));
+
+                    if (speakerA.name === 'ずんだもん') {
+                        aiIcon.src = '/static/assets/zunda_icon.png';
+                        aiIcon.alt = 'ずんだもん';
+                    } else if (speakerA.name === '四国めたん') {
+                        aiIcon.src = '/static/assets/metan_icon.png';
+                        aiIcon.alt = '四国めたん';
+                    } else if (speakerA.name === '春日部つむぎ') {
+                        aiIcon.src = '/static/assets/tsumugi_icon.png';
+                        aiIcon.alt = '春日部つむぎ';
+                    } else if (speakerA.name === '波音リツ') {
+                        aiIcon.src = '/static/assets/ritsu_icon.png';
+                        aiIcon.alt = '波音リツ';
+                    } else {
+                        aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
+                        aiIcon.alt = speakerA.name;
+                    }
                 }
             } else {
-                // 四国めたんの場合
-                if (speakerB && speakerB.name === '四国めたん') {
-                    aiIcon.src = '/static/assets/metan_icon.png';
-                    aiIcon.alt = '四国めたん';
-                } else if (speakerB && speakerB.name === 'ずんだもん') {
-                    aiIcon.src = '/static/assets/zunda_icon.png';
-                    aiIcon.alt = 'ずんだもん';
-                } else {
-                    aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
-                    aiIcon.alt = speakerB ? speakerB.name : 'Speaker B';
+                if (speakerB) {
+                    // Add speaker-specific class
+                    iconDiv.classList.add(getSpeakerClass(speakerB.name));
+
+                    if (speakerB.name === '四国めたん') {
+                        aiIcon.src = '/static/assets/metan_icon.png';
+                        aiIcon.alt = '四国めたん';
+                    } else if (speakerB.name === 'ずんだもん') {
+                        aiIcon.src = '/static/assets/zunda_icon.png';
+                        aiIcon.alt = 'ずんだもん';
+                    } else if (speakerB.name === '春日部つむぎ') {
+                        aiIcon.src = '/static/assets/tsumugi_icon.png';
+                        aiIcon.alt = '春日部つむぎ';
+                    } else if (speakerB.name === '波音リツ') {
+                        aiIcon.src = '/static/assets/ritsu_icon.png';
+                        aiIcon.alt = '波音リツ';
+                    } else {
+                        aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
+                        aiIcon.alt = speakerB.name;
+                    }
                 }
             }
             iconDiv.appendChild(aiIcon);
@@ -375,6 +395,22 @@ document.addEventListener('DOMContentLoaded', async function () {
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
         return messageDiv;
+    }
+
+    // Helper function to get speaker-specific class name
+    function getSpeakerClass(speakerName) {
+        switch (speakerName) {
+            case 'ずんだもん':
+                return 'zundamon';
+            case '四国めたん':
+                return 'metan';
+            case '春日部つむぎ':
+                return 'tsumugi';
+            case '波音リツ':
+                return 'ritsu';
+            default:
+                return '';
+        }
     }
 
     async function sendMessage() {
