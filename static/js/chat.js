@@ -1,3 +1,22 @@
+/* 音声データをAudioBufferに変換 */
+async function preparedBuffer(voice_path) {
+    const ctx = new AudioContext()
+    const res = await fetch(voice_path)
+    const arrayBuffer = await res.arrayBuffer()
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+
+    return {audioBuffer, ctx};
+}
+
+/* 入力ノード、Analyserノードを生成し、出力層に接続 */
+function buildNodes(audioBuffer, ctx) {
+    const audioSrc = new AudioBufferSourceNode(ctx, { buffer: audioBuffer })
+    const analyser = new AnalyserNode(ctx)
+    analyser.fftSize = 512
+    audioSrc.connect(analyser).connect(ctx.destination)
+    return {audioSrc, analyser};
+}
+
 class TtsQuestV3Voicevox extends Audio {
     constructor(styleId, text, ttsQuestApiKey) {
         super();
@@ -7,69 +26,7 @@ class TtsQuestV3Voicevox extends Audio {
         this.isInitialized = false;
         this.retryCount = 0;
         this.maxRetries = 5;
-        this.audioContext = null;
-        this.analyser = null;
-        this.freqDataArray = null;
         this.initialize();
-    }
-
-    setupAudioAnalysis() {
-        try {
-            // AudioContextの初期化
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            console.log('AudioContext initialized:', this.audioContext.state);
-
-            // AnalyserNodeの作成と設定
-            this.analyser = this.audioContext.createAnalyser();
-            this.analyser.fftSize = 2048;
-            console.log('Analyser created with fftSize:', this.analyser.fftSize);
-
-            // 周波数データを格納する配列の初期化
-            this.freqDataArray = new Uint8Array(this.analyser.frequencyBinCount);
-            console.log('FrequencyBinCount:', this.analyser.frequencyBinCount);
-
-            // オーディオソースの作成と接続
-            const source = this.audioContext.createMediaElementSource(this);
-            console.log('MediaElementSource created');
-
-            source.connect(this.analyser);
-            console.log('Source connected to analyser');
-
-            this.analyser.connect(this.audioContext.destination);
-            console.log('Analyser connected to destination');
-
-            // AudioContextの状態を確認
-            if (this.audioContext.state === 'suspended') {
-                console.log('Resuming AudioContext...');
-                this.audioContext.resume().then(() => {
-                    console.log('AudioContext resumed:', this.audioContext.state);
-                });
-            }
-
-            console.log('Audio analysis setup completed');
-        } catch (error) {
-            console.error('Failed to setup audio analysis:', error);
-        }
-    }
-
-    analyzeFrequency() {
-        if (!this.analyser) {
-            console.log('Analyser not initialized');
-            return;
-        }
-
-        // 周波数データの取得
-        this.analyser.getByteFrequencyData(this.freqDataArray);
-
-        // デバッグ用：周波数データの出力（最初の10個の値のみ）
-        console.log('Frequency Data:', Array.from(this.freqDataArray.slice(0, 10)));
-
-        // アニメーションフレームの要求
-        if (!this.paused) {
-            requestAnimationFrame(() => this.analyzeFrequency());
-        } else {
-            console.log('Audio paused, stopping frequency analysis');
-        }
     }
 
     initialize() {
@@ -80,29 +37,6 @@ class TtsQuestV3Voicevox extends Audio {
         };
         const query = new URLSearchParams(params);
         this.startGeneration(query);
-
-        // 音声再生開始時のイベントリスナーを追加
-        this.addEventListener('play', async () => {
-            console.log('Play event triggered');
-            try {
-                if (!this.audioContext) {
-                    console.log('Setting up audio analysis on play');
-                    await this.setupAudioAnalysis();
-                }
-                this.analyzeFrequency();
-            } catch (error) {
-                console.error('Error in play event handler:', error);
-            }
-        });
-
-        // 追加のデバッグ用イベントリスナー
-        this.addEventListener('canplay', () => {
-            console.log('Audio can play');
-        });
-
-        this.addEventListener('error', (e) => {
-            console.error('Audio error:', e);
-        });
     }
 
     startGeneration(query) {
@@ -162,7 +96,78 @@ class TtsQuestV3Voicevox extends Audio {
             detail: error.message || '音声生成中にエラーが発生しました'
         }));
     }
+
+    play() {
+        return new Promise((resolve, reject) => {
+            super.play()
+                .then(() => {
+                    resolve(this.src);
+                })
+                .catch(error => {
+                    console.error('Error playing audio:', error);
+                    reject(error);
+                });
+        });
+    }
 }
+
+let ctx = null // AudioContext: Nodeの作成、音声のデコードの制御などを行う
+let audioSrc = null // AudioBufferSourceNode: 音声入力ノード
+let analyser = null // AnalyserNode: 音声解析ノード
+let sampleInterval = null
+let prevSpec = 0 // 前回のサンプリングで取得したスペクトルの配列
+
+/* 音声再生処理 */
+async function playVoice(voice_path, voicevox_id, message) {
+    console.log("playvoice呼び出し");
+    console.log(voice_path);
+    console.log(voicevox_id);
+
+    // 音声再生中はボタンを無効化し、2重で再生できないようにする
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => {
+        button.disabled = true;
+    });
+
+    try {
+        const {audioBuffer, ctx: newCtx} = await preparedBuffer(voice_path); // audioBuffer取得
+        ctx = newCtx;
+        const {audioSrc: newAudioSrc, analyser: newAnalyser} = buildNodes(audioBuffer, ctx); // 入力、解析ノード作成
+        audioSrc = newAudioSrc;
+        analyser = newAnalyser;
+        audioSrc.start(); // 音声再生開始
+
+        //メッセージ表示開始
+        setTimeout(() => {
+            showUserMessage(message);
+        }, 1500);
+
+        // 50ms毎に音声のサンプリング→解析→リップシンクを行う
+        sampleInterval = setInterval(() => {
+            let spectrums = new Uint8Array(analyser.fftSize);
+            analyser.getByteFrequencyData(spectrums);
+            console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
+        }, 50);
+
+        // 音声終了時のコールバック： リソースの開放、無効化していたボタンを有効化する
+        audioSrc.onended = () => {
+            clearInterval(sampleInterval);
+            audioSrc = null;
+            ctx.close();
+            ctx = null;
+            prevSpec = 0;
+            buttons.forEach(button => {
+                button.disabled = false;
+            });
+        };
+    } catch (error) {
+        console.error('Error in playVoice:', error);
+        buttons.forEach(button => {
+            button.disabled = false;
+        });
+    }
+}
+
 
 document.addEventListener('DOMContentLoaded', async function () {
     const chatMessages = document.getElementById('chat-messages');
@@ -385,7 +390,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             return audio;
         };
 
-        playButton.addEventListener('click', () => {
+        playButton.addEventListener('click', async () => {
             if (isPlaying) {
                 audio.pause();
                 audio.currentTime = 0;
@@ -397,11 +402,15 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             const audioInstance = initializeAudio();
             try {
-                audioInstance.play().catch(error => {
-                    console.error('Playback error:', error);
-                    statusIndicator.textContent = '再生エラー';
+                const speaker = speakers.find(s => s.speaker_uuid === styleId);
+                const voicePath = speaker ? speaker.voice_path : null;
+                if(voicePath){
+                    await playVoice(voicePath, styleId, text);
+                } else {
+                    console.error("Voice path not found for speaker:", styleId);
+                    statusIndicator.textContent = "音声データが見つかりません";
                     playButton.disabled = true;
-                });
+                }
             } catch (error) {
                 console.error('Play method error:', error);
                 statusIndicator.textContent = '再生エラー';
@@ -504,53 +513,37 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
                 const speakerAAudio = speakerAMessage.querySelector('.audio-control');
                 if (speakerAAudio) {
-                    await new Promise((resolve, reject) => {
-                        const audio = speakerAAudio.querySelector('button');
-                        const statusIndicator = speakerAAudio.querySelector('.status-indicator');
+                    const audio = speakerAAudio.querySelector('button');
+                    const statusIndicator = speakerAAudio.querySelector('.status-indicator');
 
-                        audio.click();
-
-                        const checkStatus = setInterval(() => {
-                            if (statusIndicator.textContent === '再生可能' && !audio.disabled) {
-                                clearInterval(checkStatus);
-                                resolve();
-                            }
-                        }, 1000);
-
-                        setTimeout(() => {
-                            clearInterval(checkStatus);
-                            resolve();
-                        }, 30000);
-                    });
+                    const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
+                    const voicePathA = speakerA ? speakerA.voice_path : null;
+                    if(voicePathA){
+                        await playVoice(voicePathA, speakerASelect.value, data.speaker_a);
+                    } else {
+                        console.error("Voice path not found for speaker A:", speakerASelect.value);
+                        statusIndicator.textContent = "音声データが見つかりません";
+                        audio.disabled = true;
+                    }
                 }
 
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
                 const speakerBAudio = speakerBMessage.querySelector('.audio-control');
                 if (speakerBAudio) {
-                    await new Promise((resolve, reject) => {
-                        const audio = speakerBAudio.querySelector('button');
-                        const statusIndicator = speakerBAudio.querySelector('.status-indicator');
+                    const audio = speakerBAudio.querySelector('button');
+                    const statusIndicator = speakerBAudio.querySelector('.status-indicator');
 
-                        // 待機時間を文字数×0.18秒に変更
-                        const waitTimeMs = data.speaker_a.length * 180;
-                        console.log(`Waiting ${waitTimeMs}ms before playing speaker B's audio`);
-
-                        setTimeout(() => {
-                            audio.click();
-
-                            const checkStatus = setInterval(() => {
-                                if (statusIndicator.textContent === '再生可能' && !audio.disabled) {
-                                    clearInterval(checkStatus);
-                                    resolve();
-                                }
-                            }, 1000);
-
-                            setTimeout(() => {
-                                clearInterval(checkStatus);
-                                resolve();
-                            }, 30000);
-                        }, waitTimeMs);
-                    });
+                    const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
+                    const voicePathB = speakerB ? speakerB.voice_path : null;
+                    if(voicePathB){
+                        setTimeout( async () => {
+                            await playVoice(voicePathB, speakerBSelect.value, data.speaker_b);
+                        }, data.speaker_a.length * 180);
+                    } else {
+                        console.error("Voice path not found for speaker B:", speakerBSelect.value);
+                        statusIndicator.textContent = "音声データが見つかりません";
+                        audio.disabled = true;
+                    }
                 }
 
             } else {
@@ -673,5 +666,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                 console.log("Elements not ready after RAF, skipping");
             }
         });
+    }
+    function showUserMessage(message){
+        console.log("User Message:", message);
+        // addMessage を使用してユーザーメッセージを表示
+        addMessage(message, 'user');
     }
 });
