@@ -56,7 +56,13 @@ class TtsQuestV3Voicevox extends Audio {
         fetch(apiUrl + '?' + query.toString())
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json().then(errResponse => {
+                        console.error('API Error Response:', errResponse);
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errResponse.message || 'Unknown error'}`);
+                    }).catch(jsonError => {
+                        // JSONパースに失敗した場合のフォールバック
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    });
                 }
                 return response.json();
             })
