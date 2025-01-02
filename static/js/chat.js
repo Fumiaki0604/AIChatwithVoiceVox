@@ -120,8 +120,8 @@ let prevSpec = 0 // 前回のサンプリングで取得したスペクトルの
 /* 音声再生処理 */
 async function playVoice(voice_path, voicevox_id, message) {
     console.log("playvoice呼び出し");
-    console.log(voice_path);
-    console.log(voicevox_id);
+    console.log("Voice path:", voice_path);
+    console.log("Voicevox ID:", voicevox_id);
 
     // 音声再生中はボタンを無効化し、2重で再生できないようにする
     const buttons = document.querySelectorAll('button');
@@ -168,6 +168,20 @@ async function playVoice(voice_path, voicevox_id, message) {
     }
 }
 
+async function play(text, id) {
+    console.log("Starting play function with:", {text, id});
+    var ttsQuestApiKey = 'p-s205e-L706841' // optional
+    var audio = new TtsQuestV3Voicevox(id, text, ttsQuestApiKey);
+
+    try {
+        // mp3 URLを取得します
+        var mp3Url = await audio.play();
+        console.log("Received MP3 URL:", mp3Url);
+        await playVoice(mp3Url, id, text);
+    } catch (error) {
+        console.error("Error in play function:", error);
+    }
+}
 
 document.addEventListener('DOMContentLoaded', async function () {
     const chatMessages = document.getElementById('chat-messages');
@@ -240,7 +254,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
-
     // Add event listeners for speaker selection changes
     speakerASelect.addEventListener('change', updateStandingCharacters);
     speakerBSelect.addEventListener('change', updateStandingCharacters);
@@ -310,12 +323,13 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         updateStyles(speakerASelect.value, styleASelect);
         updateStyles(speakerBSelect.value, styleBSelect);
-        updateStandingCharacters(); // Initialize standing characters
+        updateStandingCharacters();
 
         speakerASelect.addEventListener('change', () => {
             updateStyles(speakerASelect.value, styleASelect);
             updateStandingCharacters();
         });
+
         speakerBSelect.addEventListener('change', () => {
             updateStyles(speakerBSelect.value, styleBSelect);
             updateStandingCharacters();
@@ -348,44 +362,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         const initializeAudio = () => {
             if (!audio) {
                 audio = new TtsQuestV3Voicevox(styleId, text, TTS_QUEST_API_KEY);
-
-                audio.addEventListener('tts-loading', () => {
-                    console.log('TTS Loading...');
-                    statusIndicator.textContent = '音声生成中...';
-                    playButton.disabled = true;
-                });
-
-                audio.addEventListener('tts-ready', () => {
-                    console.log('TTS Ready!');
-                    statusIndicator.textContent = '再生可能';
-                    playButton.disabled = false;
-                });
-
-                audio.addEventListener('tts-error', (event) => {
-                    console.error('TTS Error:', event.detail);
-                    statusIndicator.textContent = `エラー: ${event.detail}`;
-                    playButton.disabled = true;
-                });
-
-                audio.addEventListener('play', () => {
-                    console.log('Audio playing');
-                    isPlaying = true;
-                    playButton.innerHTML = '<i class="fas fa-stop"></i>';
-                    statusIndicator.textContent = '再生中';
-                });
-
-                audio.addEventListener('ended', () => {
-                    console.log('Audio ended');
-                    isPlaying = false;
-                    playButton.innerHTML = '<i class="fas fa-play"></i>';
-                    statusIndicator.textContent = '再生可能';
-                });
-
-                audio.addEventListener('error', (e) => {
-                    console.error('Audio error:', e);
-                    statusIndicator.textContent = '再生エラー';
-                    playButton.disabled = true;
-                });
             }
             return audio;
         };
@@ -400,17 +376,9 @@ document.addEventListener('DOMContentLoaded', async function () {
                 return;
             }
 
-            const audioInstance = initializeAudio();
             try {
-                const speaker = speakers.find(s => s.speaker_uuid === styleId);
-                const voicePath = speaker ? speaker.voice_path : null;
-                if(voicePath){
-                    await playVoice(voicePath, styleId, text);
-                } else {
-                    console.error("Voice path not found for speaker:", styleId);
-                    statusIndicator.textContent = "音声データが見つかりません";
-                    playButton.disabled = true;
-                }
+                console.log("Playing audio for styleId:", styleId);
+                await play(text, styleId);
             } catch (error) {
                 console.error('Play method error:', error);
                 statusIndicator.textContent = '再生エラー';
@@ -513,39 +481,16 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
                 const speakerAAudio = speakerAMessage.querySelector('.audio-control');
                 if (speakerAAudio) {
-                    const audio = speakerAAudio.querySelector('button');
-                    const statusIndicator = speakerAAudio.querySelector('.status-indicator');
-
-                    const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
-                    const voicePathA = speakerA ? speakerA.voice_path : null;
-                    if(voicePathA){
-                        await playVoice(voicePathA, speakerASelect.value, data.speaker_a);
-                    } else {
-                        console.error("Voice path not found for speaker A:", speakerASelect.value);
-                        statusIndicator.textContent = "音声データが見つかりません";
-                        audio.disabled = true;
-                    }
+                    await play(data.speaker_a, speakerASelect.value);
                 }
 
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
                 const speakerBAudio = speakerBMessage.querySelector('.audio-control');
                 if (speakerBAudio) {
-                    const audio = speakerBAudio.querySelector('button');
-                    const statusIndicator = speakerBAudio.querySelector('.status-indicator');
-
-                    const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
-                    const voicePathB = speakerB ? speakerB.voice_path : null;
-                    if(voicePathB){
-                        setTimeout( async () => {
-                            await playVoice(voicePathB, speakerBSelect.value, data.speaker_b);
-                        }, data.speaker_a.length * 180);
-                    } else {
-                        console.error("Voice path not found for speaker B:", speakerBSelect.value);
-                        statusIndicator.textContent = "音声データが見つかりません";
-                        audio.disabled = true;
-                    }
+                    setTimeout(async () => {
+                        await play(data.speaker_b, speakerBSelect.value);
+                    }, data.speaker_a.length * 180);
                 }
-
             } else {
                 addMessage('エラーが発生しました: ' + data.error, 'error');
             }
@@ -561,7 +506,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     });
 
-    // まばたきアニメーションの設定関数を修正
     function setupBlinking(characterElement) {
         console.log("setupBlinking called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
@@ -667,7 +611,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         });
     }
-    function showUserMessage(message){
+
+    function showUserMessage(message) {
         console.log("User Message:", message);
         // addMessage を使用してユーザーメッセージを表示
         addMessage(message, 'user');
