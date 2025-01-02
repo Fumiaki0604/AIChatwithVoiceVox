@@ -212,37 +212,6 @@ async function playVoice(voice_path, voicevox_id, message) {
     }
 }
 
-async function play(text, id) {
-    console.log("Starting play function with:", {text, id});
-    var ttsQuestApiKey = 'p-s205e-L706841'; // optional
-    var audio = new TtsQuestV3Voicevox(id, text, ttsQuestApiKey);
-
-    return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            reject(new Error('音声生成がタイムアウトしました'));
-        }, 30000); // 30秒タイムアウト
-
-        audio.addEventListener('tts-ready', async () => {
-            clearTimeout(timeout);
-            try {
-                const mp3Url = await audio.play();
-                console.log("Received MP3 URL:", mp3Url);
-                await playVoice(mp3Url, id, text);
-                resolve();
-            } catch (error) {
-                console.error("Error playing audio:", error);
-                reject(error);
-            }
-        });
-
-        audio.addEventListener('tts-error', (event) => {
-            clearTimeout(timeout);
-            console.error("TTS Error:", event.detail);
-            reject(new Error(event.detail));
-        });
-    });
-}
-
 document.addEventListener('DOMContentLoaded', async function () {
     const chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
@@ -404,6 +373,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
     }
 
+    let audio = null; // Added audio variable declaration here
+    let isPlaying = false; // Added isPlaying variable declaration here
+
     const createAudioControl = (text, styleId) => {
         const audioControl = document.createElement('div');
         audioControl.classList.add('audio-control');
@@ -416,8 +388,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         statusIndicator.classList.add('status-indicator');
         statusIndicator.textContent = '準備中...';
 
-        let audio = null;
-        let isPlaying = false;
 
         const initializeAudio = () => {
             if (!audio) {
@@ -438,8 +408,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             try {
                 console.log("Playing audio for styleId:", styleId);
+                isPlaying = true; // Set isPlaying to true before playing
+                playButton.innerHTML = '<i class="fas fa-pause"></i>'; // Change button to pause
                 await play(text, styleId);
                 statusIndicator.textContent = '再生完了';
+                isPlaying = false; // Set isPlaying to false after playing
+                playButton.innerHTML = '<i class="fas fa-play"></i>'; // Change button back to play
             } catch (error) {
                 console.error('Play method error:', error);
                 statusIndicator.textContent = '再生エラー';
@@ -510,8 +484,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         messageDiv.appendChild(timestamp);
 
         if (type !== 'user' && TTS_QUEST_API_KEY) {
-            const styleId = type === 'ai-message-a' ?
-                styleASelect.value : styleBSelect.value;
+            const styleId = type === 'ai-message-a' ? styleASelect.value : styleBSelect.value;
             const audioControl = createAudioControl(text, styleId);
             messageDiv.appendChild(audioControl);
         }
@@ -542,14 +515,14 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
                 const speakerAAudio = speakerAMessage.querySelector('.audio-control');
                 if (speakerAAudio) {
-                    await play(data.speaker_a, speakerASelect.value);
+                    await play(data.speaker_a, styleASelect.value);
                 }
 
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
                 const speakerBAudio = speakerBMessage.querySelector('.audio-control');
                 if (speakerBAudio) {
                     setTimeout(async () => {
-                        await play(data.speaker_b, speakerBSelect.value);
+                        await play(data.speaker_b, styleBSelect.value);
                     }, data.speaker_a.length * 180);
                 }
             } else {
