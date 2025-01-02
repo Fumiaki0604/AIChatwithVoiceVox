@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!eyesImage) return; // 目の画像が見つからない場合は処理を終了
 
         let isBlinking = false;
-        characterElement.blinkTimers = [];
+        let blinkIntervalId = null;
 
         // 既存のタイマーをクリーンアップ
         if (characterElement.cleanup) {
@@ -501,37 +501,44 @@ document.addEventListener('DOMContentLoaded', async function () {
             eyesImage.src = '/static/assets/metan_eye_close.png';
 
             // まばたきの持続時間（100ms）
-            const blinkTimer = setTimeout(() => {
+            setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/metan_eye_open.png';
                     isBlinking = false;
-
-                    // 次のまばたきまでの時間をランダムに設定（2-6秒）
-                    const nextBlinkDelay = Math.random() * 4000 + 2000;
-                    const nextBlinkTimer = setTimeout(blink, nextBlinkDelay);
-                    characterElement.blinkTimers.push(nextBlinkTimer);
                 }
             }, 100);
-            characterElement.blinkTimers.push(blinkTimer);
+        }
+
+        function startBlinking() {
+            if (blinkIntervalId) clearInterval(blinkIntervalId);
+
+            // まばたきのインターバルを2.5-3.5秒の範囲で設定
+            blinkIntervalId = setInterval(() => {
+                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                    blink();
+                } else {
+                    characterElement.cleanup();
+                }
+            }, 2500 + Math.random() * 1000);
+
+            // 初回まばたきを0.5-1秒後に開始
+            setTimeout(() => {
+                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                    blink();
+                }
+            }, 500 + Math.random() * 500);
         }
 
         // クリーンアップ用の関数を改善
         characterElement.cleanup = () => {
-            if (characterElement.blinkTimers) {
-                characterElement.blinkTimers.forEach(timer => {
-                    if (timer) clearTimeout(timer);
-                });
-                characterElement.blinkTimers = [];
+            if (blinkIntervalId) {
+                clearInterval(blinkIntervalId);
+                blinkIntervalId = null;
             }
             isBlinking = false;
         };
 
-        // 初回まばたきを0.5-2秒後に開始
-        const initialBlinkTimer = setTimeout(() => {
-            if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                blink();
-            }
-        }, Math.random() * 1500 + 500);
-        characterElement.blinkTimers.push(initialBlinkTimer);
+        // まばたきを開始
+        startBlinking();
     }
 });
