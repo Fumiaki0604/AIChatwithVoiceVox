@@ -7,9 +7,51 @@ class TtsQuestV3Voicevox extends Audio {
         this.isInitialized = false;
         this.retryCount = 0;
         this.maxRetries = 5;
+        this.audioContext = null;
+        this.analyser = null;
+        this.freqDataArray = null;
         this.initialize();
     }
 
+    setupAudioAnalysis() {
+        try {
+            // AudioContextの初期化
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            // AnalyserNodeの作成と設定
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 2048;
+
+            // 周波数データを格納する配列の初期化
+            this.freqDataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+            // オーディオソースの作成と接続
+            const source = this.audioContext.createMediaElementSource(this);
+            source.connect(this.analyser);
+            this.analyser.connect(this.audioContext.destination);
+
+            console.log('Audio analysis setup completed');
+        } catch (error) {
+            console.error('Failed to setup audio analysis:', error);
+        }
+    }
+
+    analyzeFrequency() {
+        if (!this.analyser) return;
+
+        // 周波数データの取得
+        this.analyser.getByteFrequencyData(this.freqDataArray);
+
+        // デバッグ用：周波数データの出力（最初の10個の値のみ）
+        console.log('Frequency Data:', Array.from(this.freqDataArray.slice(0, 10)));
+
+        // アニメーションフレームの要求
+        if (!this.paused) {
+            requestAnimationFrame(() => this.analyzeFrequency());
+        }
+    }
+
+    // 既存のメソッドを修正
     initialize() {
         const params = {
             key: this.ttsQuestApiKey,
@@ -18,6 +60,14 @@ class TtsQuestV3Voicevox extends Audio {
         };
         const query = new URLSearchParams(params);
         this.startGeneration(query);
+
+        // 音声再生開始時のイベントリスナーを追加
+        this.addEventListener('play', () => {
+            if (!this.audioContext) {
+                this.setupAudioAnalysis();
+            }
+            this.analyzeFrequency();
+        });
     }
 
     startGeneration(query) {
