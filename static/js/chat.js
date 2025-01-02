@@ -102,11 +102,15 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Function to update standing characters
     function updateStandingCharacters() {
+        console.log("Updating standing characters");
+
         // 既存のキャラクターをクリーンアップ
         if (leftCharacter.cleanup) {
+            console.log("Cleaning up left character");
             leftCharacter.cleanup();
         }
         if (rightCharacter.cleanup) {
+            console.log("Cleaning up right character");
             rightCharacter.cleanup();
         }
 
@@ -114,13 +118,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
 
         // Update left character (Speaker A)
+        console.log("Updating left character (Speaker A):", speakerA?.name);
         if (speakerA && speakerA.name === '四国めたん') {
             leftCharacter.innerHTML = `
                 <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
                 <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
             `;
             // DOMの更新が完了するのを待ってから初期化
-            requestAnimationFrame(() => {
+            Promise.resolve().then(() => {
+                console.log("Setting up left character blinking");
                 setupBlinking(leftCharacter);
             });
         } else {
@@ -128,19 +134,22 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         // Update right character (Speaker B)
+        console.log("Updating right character (Speaker B):", speakerB?.name);
         if (speakerB && speakerB.name === '四国めたん') {
             rightCharacter.innerHTML = `
                 <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
                 <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
             `;
             // DOMの更新が完了するのを待ってから初期化
-            requestAnimationFrame(() => {
+            Promise.resolve().then(() => {
+                console.log("Setting up right character blinking");
                 setupBlinking(rightCharacter);
             });
         } else {
             rightCharacter.innerHTML = '';
         }
     }
+
 
     // Add event listeners for speaker selection changes
     speakerASelect.addEventListener('change', updateStandingCharacters);
@@ -439,8 +448,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                         const audio = speakerBAudio.querySelector('button');
                         const statusIndicator = speakerBAudio.querySelector('.status-indicator');
 
-                        // 待機時間を文字数×0.2秒に変更
-                        const waitTimeMs = data.speaker_a.length * 200;
+                        // 待機時間を文字数×0.18秒に変更
+                        const waitTimeMs = data.speaker_a.length * 180;
                         console.log(`Waiting ${waitTimeMs}ms before playing speaker B's audio`);
 
                         setTimeout(() => {
@@ -478,31 +487,42 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // まばたきアニメーションの設定関数を修正
     function setupBlinking(characterElement) {
+        console.log("setupBlinking called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
-        if (!eyesImage) return; // 目の画像が見つからない場合は処理を終了
+        if (!eyesImage) {
+            console.log("No eyes image found, returning");
+            return;
+        }
 
         let isBlinking = false;
         let blinkIntervalId = null;
 
         // 既存のタイマーをクリーンアップ
         if (characterElement.cleanup) {
+            console.log("Cleaning up existing timers");
             characterElement.cleanup();
         }
 
         function blink() {
             if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
+                console.log("Eyes element not valid anymore, cleaning up");
                 characterElement.cleanup();
                 return;
             }
 
-            if (isBlinking) return;
+            if (isBlinking) {
+                console.log("Already blinking, skipping");
+                return;
+            }
 
+            console.log("Executing blink");
             isBlinking = true;
             eyesImage.src = '/static/assets/metan_eye_close.png';
 
             // まばたきの持続時間（100ms）
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                    console.log("Opening eyes");
                     eyesImage.src = '/static/assets/metan_eye_open.png';
                     isBlinking = false;
                 }
@@ -510,35 +530,53 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         function startBlinking() {
-            if (blinkIntervalId) clearInterval(blinkIntervalId);
+            console.log("Starting blink animation");
+            if (blinkIntervalId) {
+                console.log("Clearing existing interval");
+                clearInterval(blinkIntervalId);
+            }
 
             // まばたきのインターバルを2.5-3.5秒の範囲で設定
+            const interval = 2500 + Math.random() * 1000;
+            console.log("Setting blink interval to", interval, "ms");
             blinkIntervalId = setInterval(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     blink();
                 } else {
+                    console.log("Character element invalid, cleaning up");
                     characterElement.cleanup();
                 }
-            }, 2500 + Math.random() * 1000);
+            }, interval);
 
             // 初回まばたきを0.5-1秒後に開始
+            const initialDelay = 500 + Math.random() * 500;
+            console.log("Setting initial blink delay to", initialDelay, "ms");
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     blink();
                 }
-            }, 500 + Math.random() * 500);
+            }, initialDelay);
         }
 
         // クリーンアップ用の関数を改善
         characterElement.cleanup = () => {
+            console.log("Cleanup called");
             if (blinkIntervalId) {
+                console.log("Clearing interval in cleanup");
                 clearInterval(blinkIntervalId);
                 blinkIntervalId = null;
             }
             isBlinking = false;
         };
 
-        // まばたきを開始
-        startBlinking();
+        // アニメーション開始前に要素の存在を再確認
+        requestAnimationFrame(() => {
+            if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                console.log("Starting blinking animation after RAF");
+                startBlinking();
+            } else {
+                console.log("Elements not ready after RAF, skipping");
+            }
+        });
     }
 });
