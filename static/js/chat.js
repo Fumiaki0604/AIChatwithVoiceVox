@@ -48,7 +48,7 @@ function createAudioControl(text, styleId) {
 
     const statusIndicator = document.createElement('span');
     statusIndicator.classList.add('status-indicator');
-    statusIndicator.textContent = '準備中...';
+    statusIndicator.textContent = '再生可能';  // 初期状態を「再生可能」に変更
 
     playButton.addEventListener('click', async () => {
         if (isPlaying) {
@@ -64,6 +64,7 @@ function createAudioControl(text, styleId) {
             console.log("Playing audio for styleId:", styleId);
             isPlaying = true;
             playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            statusIndicator.textContent = '再生中...';  // ステータスを「再生中...」に更新
             await play(text, styleId);
             statusIndicator.textContent = '再生完了';
             isPlaying = false;
@@ -71,6 +72,8 @@ function createAudioControl(text, styleId) {
         } catch (error) {
             console.error('Play method error:', error);
             statusIndicator.textContent = '再生エラー';
+            isPlaying = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
             playButton.disabled = true;
         }
     });
@@ -318,11 +321,6 @@ async function playVoice(voice_path, voicevox_id, message) {
         analyser = newAnalyser;
         audioSrc.start(); // 音声再生開始
 
-        //メッセージ表示開始
-        setTimeout(() => {
-            showUserMessage(message);
-        }, 1500);
-
         // 50ms毎に音声のサンプリング→解析→リップシンクを行う
         sampleInterval = setInterval(() => {
             let spectrums = new Uint8Array(analyser.fftSize);
@@ -503,77 +501,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
 
-    let isPlaying = false; // Added isPlaying variable declaration here
-
     //The original createAudioControl function is now defined in the global scope above.
 
-    function addMessage(text, type) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message');
-        messageDiv.classList.add(`${type}-message`);
+    //The original addMessage function is now defined in the global scope above.
 
-        // Add icon
-        const iconDiv = document.createElement('div');
-        iconDiv.classList.add('message-icon');
-
-        if (type === 'user') {
-            const userIcon = document.createElement('i');
-            userIcon.classList.add('fas', 'fa-user');
-            iconDiv.appendChild(userIcon);
-        } else {
-            const aiIcon = document.createElement('img');
-            const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
-            const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
-
-            if (type === 'ai-message-a') {
-                // ずんだもんの場合
-                if (speakerA && speakerA.name === 'ずんだもん') {
-                    aiIcon.src = '/static/assets/zunda_icon.png';
-                    aiIcon.alt = 'ずんだもん';
-                } else if (speakerA && speakerA.name === '四国めたん') {
-                    aiIcon.src = '/static/assets/metan_icon.png';
-                    aiIcon.alt = '四国めたん';
-                } else {
-                    aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
-                    aiIcon.alt = speakerA ? speakerA.name : 'Speaker A';
-                }
-            } else {
-                // 四国めたんの場合
-                if (speakerB && speakerB.name === '四国めたん') {
-                    aiIcon.src = '/static/assets/metan_icon.png';
-                    aiIcon.alt = '四国めたん';
-                } else if (speakerB && speakerB.name === 'ずんだもん') {
-                    aiIcon.src = '/static/assets/zunda_icon.png';
-                    aiIcon.alt = 'ずんだもん';
-                } else {
-                    aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
-                    aiIcon.alt = speakerB ? speakerB.name : 'Speaker B';
-                }
-            }
-            iconDiv.appendChild(aiIcon);
-        }
-        messageDiv.appendChild(iconDiv);
-
-        const contentDiv = document.createElement('div');
-        contentDiv.classList.add('message-content');
-        contentDiv.textContent = text;
-        messageDiv.appendChild(contentDiv);
-
-        const timestamp = document.createElement('div');
-        timestamp.classList.add('timestamp');
-        timestamp.textContent = getCurrentTime();
-        messageDiv.appendChild(timestamp);
-
-        if (type !== 'user' && TTS_QUEST_API_KEY) {
-            const styleId = type === 'ai-message-a' ? styleASelect.value : styleBSelect.value;
-            const audioControl = createAudioControl(text, styleId);
-            messageDiv.appendChild(audioControl);
-        }
-
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        return messageDiv;
-    }
 
     async function sendMessage() {
         const message = userInput.value.trim();
@@ -593,15 +524,15 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             const data = await response.json();
             if (response.ok) {
+                // 話者Aのメッセージを追加して再生
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
-                const speakerAAudio = speakerAMessage.querySelector('.audio-control');
-                if (speakerAAudio) {
+                if (speakerAMessage) {
                     await play(data.speaker_a, styleASelect.value);
                 }
 
+                // 話者Bのメッセージを追加して再生（話者Aの再生後に遅延して実行）
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
-                const speakerBAudio = speakerBMessage.querySelector('.audio-control');
-                if (speakerBAudio) {
+                if (speakerBMessage) {
                     setTimeout(async () => {
                         await play(data.speaker_b, styleBSelect.value);
                     }, data.speaker_a.length * 180);
