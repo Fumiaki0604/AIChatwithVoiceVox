@@ -17,18 +17,34 @@ class TtsQuestV3Voicevox extends Audio {
         try {
             // AudioContextの初期化
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('AudioContext initialized:', this.audioContext.state);
 
             // AnalyserNodeの作成と設定
             this.analyser = this.audioContext.createAnalyser();
             this.analyser.fftSize = 2048;
+            console.log('Analyser created with fftSize:', this.analyser.fftSize);
 
             // 周波数データを格納する配列の初期化
             this.freqDataArray = new Uint8Array(this.analyser.frequencyBinCount);
+            console.log('FrequencyBinCount:', this.analyser.frequencyBinCount);
 
             // オーディオソースの作成と接続
             const source = this.audioContext.createMediaElementSource(this);
+            console.log('MediaElementSource created');
+
             source.connect(this.analyser);
+            console.log('Source connected to analyser');
+
             this.analyser.connect(this.audioContext.destination);
+            console.log('Analyser connected to destination');
+
+            // AudioContextの状態を確認
+            if (this.audioContext.state === 'suspended') {
+                console.log('Resuming AudioContext...');
+                this.audioContext.resume().then(() => {
+                    console.log('AudioContext resumed:', this.audioContext.state);
+                });
+            }
 
             console.log('Audio analysis setup completed');
         } catch (error) {
@@ -37,7 +53,10 @@ class TtsQuestV3Voicevox extends Audio {
     }
 
     analyzeFrequency() {
-        if (!this.analyser) return;
+        if (!this.analyser) {
+            console.log('Analyser not initialized');
+            return;
+        }
 
         // 周波数データの取得
         this.analyser.getByteFrequencyData(this.freqDataArray);
@@ -48,10 +67,11 @@ class TtsQuestV3Voicevox extends Audio {
         // アニメーションフレームの要求
         if (!this.paused) {
             requestAnimationFrame(() => this.analyzeFrequency());
+        } else {
+            console.log('Audio paused, stopping frequency analysis');
         }
     }
 
-    // 既存のメソッドを修正
     initialize() {
         const params = {
             key: this.ttsQuestApiKey,
@@ -62,11 +82,26 @@ class TtsQuestV3Voicevox extends Audio {
         this.startGeneration(query);
 
         // 音声再生開始時のイベントリスナーを追加
-        this.addEventListener('play', () => {
-            if (!this.audioContext) {
-                this.setupAudioAnalysis();
+        this.addEventListener('play', async () => {
+            console.log('Play event triggered');
+            try {
+                if (!this.audioContext) {
+                    console.log('Setting up audio analysis on play');
+                    await this.setupAudioAnalysis();
+                }
+                this.analyzeFrequency();
+            } catch (error) {
+                console.error('Error in play event handler:', error);
             }
-            this.analyzeFrequency();
+        });
+
+        // 追加のデバッグ用イベントリスナー
+        this.addEventListener('canplay', () => {
+            console.log('Audio can play');
+        });
+
+        this.addEventListener('error', (e) => {
+            console.error('Audio error:', e);
         });
     }
 
@@ -205,7 +240,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     speakerASelect.addEventListener('change', updateStandingCharacters);
     speakerBSelect.addEventListener('change', updateStandingCharacters);
 
-
     // Initialize theme
     document.documentElement.setAttribute('data-theme', currentTheme);
     updateThemeToggleButton();
@@ -224,7 +258,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         localStorage.setItem('theme', currentTheme);
         updateThemeToggleButton();
     });
-
 
     try {
         const response = await fetch('/get-tts-key');
