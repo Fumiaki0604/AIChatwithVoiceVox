@@ -31,6 +31,7 @@ let TTS_QUEST_API_KEY = '';
 let currentTheme = localStorage.getItem('theme') || 'light';
 let audio = null;
 let isPlaying = false;
+let currentStatusIndicator = null;
 
 function getCurrentTime() {
     const now = new Date();
@@ -62,13 +63,11 @@ function createAudioControl(text, styleId) {
 
         try {
             console.log("Playing audio for styleId:", styleId);
+            currentStatusIndicator = statusIndicator; // 現在のステータスインジケータを保存
             isPlaying = true;
             playButton.innerHTML = '<i class="fas fa-pause"></i>';
             statusIndicator.textContent = '再生中...';  // ステータスを「再生中...」に更新
             await play(text, styleId);
-            statusIndicator.textContent = '再生完了';
-            isPlaying = false;
-            playButton.innerHTML = '<i class="fas fa-play"></i>';
         } catch (error) {
             console.error('Play method error:', error);
             statusIndicator.textContent = '再生エラー';
@@ -81,6 +80,70 @@ function createAudioControl(text, styleId) {
     audioControl.appendChild(playButton);
     audioControl.appendChild(statusIndicator);
     return audioControl;
+}
+
+/* 音声再生処理 */
+async function playVoice(voice_path, voicevox_id, message) {
+    console.log("playvoice呼び出し");
+    console.log("Voice path:", voice_path);
+    console.log("Voicevox ID:", voicevox_id);
+
+    // 音声再生中はボタンを無効化し、2重で再生できないようにする
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => {
+        button.disabled = true;
+    });
+
+    try {
+        const {audioBuffer, ctx: newCtx} = await preparedBuffer(voice_path); // audioBuffer取得
+        ctx = newCtx;
+        const {audioSrc: newAudioSrc, analyser: newAnalyser} = buildNodes(audioBuffer, ctx); // 入力、解析ノード作成
+        audioSrc = newAudioSrc;
+        analyser = newAnalyser;
+        audioSrc.start(); // 音声再生開始
+
+        // 50ms毎に音声のサンプリング→解析→リップシンクを行う
+        sampleInterval = setInterval(() => {
+            let spectrums = new Uint8Array(analyser.fftSize);
+            analyser.getByteFrequencyData(spectrums);
+            console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
+        }, 50);
+
+        // 音声終了時のコールバック： リソースの開放、無効化していたボタンを有効化する
+        audioSrc.onended = () => {
+            clearInterval(sampleInterval);
+            audioSrc = null;
+            ctx.close();
+            ctx = null;
+            prevSpec = 0;
+            buttons.forEach(button => {
+                button.disabled = false;
+            });
+            // 音声再生完了時にステータスを更新
+            if (currentStatusIndicator) {
+                currentStatusIndicator.textContent = '再生可能';
+                isPlaying = false;
+                const playButton = currentStatusIndicator.previousElementSibling;
+                if (playButton) {
+                    playButton.innerHTML = '<i class="fas fa-play"></i>';
+                }
+            }
+        };
+    } catch (error) {
+        console.error('Error in playVoice:', error);
+        buttons.forEach(button => {
+            button.disabled = false;
+        });
+        if (currentStatusIndicator) {
+            currentStatusIndicator.textContent = '再生エラー';
+            isPlaying = false;
+            const playButton = currentStatusIndicator.previousElementSibling;
+            if (playButton) {
+                playButton.innerHTML = '<i class="fas fa-play"></i>';
+                playButton.disabled = true;
+            }
+        }
+    }
 }
 
 // メッセージ表示関数をグローバルスコープに移動
@@ -301,51 +364,6 @@ let analyser = null; // AnalyserNode: 音声解析ノード
 let sampleInterval = null;
 let prevSpec = 0; // 前回のサンプリングで取得したスペクトルの配列
 
-/* 音声再生処理 */
-async function playVoice(voice_path, voicevox_id, message) {
-    console.log("playvoice呼び出し");
-    console.log("Voice path:", voice_path);
-    console.log("Voicevox ID:", voicevox_id);
-
-    // 音声再生中はボタンを無効化し、2重で再生できないようにする
-    const buttons = document.querySelectorAll('button');
-    buttons.forEach(button => {
-        button.disabled = true;
-    });
-
-    try {
-        const {audioBuffer, ctx: newCtx} = await preparedBuffer(voice_path); // audioBuffer取得
-        ctx = newCtx;
-        const {audioSrc: newAudioSrc, analyser: newAnalyser} = buildNodes(audioBuffer, ctx); // 入力、解析ノード作成
-        audioSrc = newAudioSrc;
-        analyser = newAnalyser;
-        audioSrc.start(); // 音声再生開始
-
-        // 50ms毎に音声のサンプリング→解析→リップシンクを行う
-        sampleInterval = setInterval(() => {
-            let spectrums = new Uint8Array(analyser.fftSize);
-            analyser.getByteFrequencyData(spectrums);
-            console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
-        }, 50);
-
-        // 音声終了時のコールバック： リソースの開放、無効化していたボタンを有効化する
-        audioSrc.onended = () => {
-            clearInterval(sampleInterval);
-            audioSrc = null;
-            ctx.close();
-            ctx = null;
-            prevSpec = 0;
-            buttons.forEach(button => {
-                button.disabled = false;
-            });
-        };
-    } catch (error) {
-        console.error('Error in playVoice:', error);
-        buttons.forEach(button => {
-            button.disabled = false;
-        });
-    }
-}
 
 document.addEventListener('DOMContentLoaded', async function () {
     chatMessages = document.getElementById('chat-messages');
@@ -499,11 +517,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     } catch (error) {
         console.error('Error loading speakers:', error);
     }
-
-
-    //The original createAudioControl function is now defined in the global scope above.
-
-    //The original addMessage function is now defined in the global scope above.
 
 
     async function sendMessage() {
