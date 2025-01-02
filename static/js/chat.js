@@ -473,27 +473,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     // まばたきアニメーションの設定関数を修正
     function setupBlinking(characterElement) {
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
-        if (!eyesImage) return;
+        if (!eyesImage) return; // 目の画像が見つからない場合は処理を終了
 
         let isBlinking = false;
-        let animationState = {
-            timers: [],
-            active: true
-        };
+        characterElement.blinkTimers = characterElement.blinkTimers || [];
 
-        // 既存のアニメーション状態をクリーンアップ
-        if (characterElement.animationState) {
-            characterElement.animationState.active = false;
-            if (characterElement.cleanup) {
-                characterElement.cleanup();
-            }
+        // 既存のタイマーをクリーンアップ
+        if (characterElement.cleanup) {
+            characterElement.cleanup();
         }
 
-        // 新しいアニメーション状態を設定
-        characterElement.animationState = animationState;
-
         function blink() {
-            if (!animationState.active || !eyesImage || !eyesImage.parentNode) {
+            if (!eyesImage || !eyesImage.parentNode) {
                 characterElement.cleanup();
                 return;
             }
@@ -503,39 +494,34 @@ document.addEventListener('DOMContentLoaded', async function () {
             isBlinking = true;
             eyesImage.src = '/static/assets/metan_eye_close.png';
 
+            // まばたきの持続時間（100ms）
             const blinkTimer = setTimeout(() => {
-                if (!animationState.active) return;
-
                 if (eyesImage && eyesImage.parentNode) {
                     eyesImage.src = '/static/assets/metan_eye_open.png';
                     isBlinking = false;
 
                     // 次のまばたきまでの時間をランダムに設定（2-6秒）
-                    if (animationState.active) {
-                        const nextBlinkDelay = Math.random() * 4000 + 2000;
-                        const nextBlinkTimer = setTimeout(blink, nextBlinkDelay);
-                        animationState.timers.push(nextBlinkTimer);
-                    }
+                    const nextBlinkDelay = Math.random() * 4000 + 2000;
+                    const nextBlinkTimer = setTimeout(blink, nextBlinkDelay);
+                    characterElement.blinkTimers.push(nextBlinkTimer);
                 }
             }, 100);
-
-            animationState.timers.push(blinkTimer);
+            characterElement.blinkTimers.push(blinkTimer);
         }
 
-        // クリーンアップ関数を改善
+        // クリーンアップ用の関数を改善
         characterElement.cleanup = () => {
-            if (characterElement.animationState) {
-                characterElement.animationState.active = false;
-                characterElement.animationState.timers.forEach(timer => {
+            if (characterElement.blinkTimers) {
+                characterElement.blinkTimers.forEach(timer => {
                     if (timer) clearTimeout(timer);
                 });
-                characterElement.animationState.timers = [];
+                characterElement.blinkTimers = [];
             }
             isBlinking = false;
         };
 
         // 初回まばたきを0.5-2秒後に開始
         const initialBlinkTimer = setTimeout(blink, Math.random() * 1500 + 500);
-        animationState.timers.push(initialBlinkTimer);
+        characterElement.blinkTimers.push(initialBlinkTimer);
     }
 });
