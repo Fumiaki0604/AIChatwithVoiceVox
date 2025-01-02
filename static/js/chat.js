@@ -119,7 +119,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                 <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
                 <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
             `;
-            setupBlinking(leftCharacter);
+            // DOMの更新が完了するのを待ってから初期化
+            requestAnimationFrame(() => {
+                setupBlinking(leftCharacter);
+            });
         } else {
             leftCharacter.innerHTML = '';
         }
@@ -130,7 +133,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                 <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
                 <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
             `;
-            setupBlinking(rightCharacter);
+            // DOMの更新が完了するのを待ってから初期化
+            requestAnimationFrame(() => {
+                setupBlinking(rightCharacter);
+            });
         } else {
             rightCharacter.innerHTML = '';
         }
@@ -476,7 +482,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!eyesImage) return; // 目の画像が見つからない場合は処理を終了
 
         let isBlinking = false;
-        characterElement.blinkTimers = characterElement.blinkTimers || [];
+        characterElement.blinkTimers = [];
 
         // 既存のタイマーをクリーンアップ
         if (characterElement.cleanup) {
@@ -484,7 +490,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         function blink() {
-            if (!eyesImage || !eyesImage.parentNode) {
+            if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
                 characterElement.cleanup();
                 return;
             }
@@ -496,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             // まばたきの持続時間（100ms）
             const blinkTimer = setTimeout(() => {
-                if (eyesImage && eyesImage.parentNode) {
+                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/metan_eye_open.png';
                     isBlinking = false;
 
@@ -521,7 +527,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         };
 
         // 初回まばたきを0.5-2秒後に開始
-        const initialBlinkTimer = setTimeout(blink, Math.random() * 1500 + 500);
+        const initialBlinkTimer = setTimeout(() => {
+            if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                blink();
+            }
+        }, Math.random() * 1500 + 500);
         characterElement.blinkTimers.push(initialBlinkTimer);
     }
 });
