@@ -20,6 +20,96 @@ function buildNodes(audioBuffer, ctx) {
     return {audioSrc, analyser};
 }
 
+// グローバル変数の定義
+let chatMessages;
+let speakerASelect;
+let speakerBSelect;
+let styleASelect;
+let styleBSelect;
+let speakers = [];
+
+function getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+}
+
+// メッセージ表示関数をグローバルスコープに移動
+function addMessage(text, type) {
+    if (!chatMessages) {
+        chatMessages = document.getElementById('chat-messages');
+    }
+
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message');
+    messageDiv.classList.add(`${type}-message`);
+
+    // Add icon
+    const iconDiv = document.createElement('div');
+    iconDiv.classList.add('message-icon');
+
+    if (type === 'user') {
+        const userIcon = document.createElement('i');
+        userIcon.classList.add('fas', 'fa-user');
+        iconDiv.appendChild(userIcon);
+    } else {
+        const aiIcon = document.createElement('img');
+        const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
+        const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
+
+        if (type === 'ai-message-a') {
+            if (speakerA && speakerA.name === 'ずんだもん') {
+                aiIcon.src = '/static/assets/zunda_icon.png';
+                aiIcon.alt = 'ずんだもん';
+            } else if (speakerA && speakerA.name === '四国めたん') {
+                aiIcon.src = '/static/assets/metan_icon.png';
+                aiIcon.alt = '四国めたん';
+            } else {
+                aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
+                aiIcon.alt = speakerA ? speakerA.name : 'Speaker A';
+            }
+        } else {
+            if (speakerB && speakerB.name === '四国めたん') {
+                aiIcon.src = '/static/assets/metan_icon.png';
+                aiIcon.alt = '四国めたん';
+            } else if (speakerB && speakerB.name === 'ずんだもん') {
+                aiIcon.src = '/static/assets/zunda_icon.png';
+                aiIcon.alt = 'ずんだもん';
+            } else {
+                aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
+                aiIcon.alt = speakerB ? speakerB.name : 'Speaker B';
+            }
+        }
+        iconDiv.appendChild(aiIcon);
+    }
+    messageDiv.appendChild(iconDiv);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('message-content');
+    contentDiv.textContent = text;
+    messageDiv.appendChild(contentDiv);
+
+    const timestamp = document.createElement('div');
+    timestamp.classList.add('timestamp');
+    timestamp.textContent = getCurrentTime();
+    messageDiv.appendChild(timestamp);
+
+    if (type !== 'user' && TTS_QUEST_API_KEY) {
+        const styleId = type === 'ai-message-a' ? styleASelect.value : styleBSelect.value;
+        const audioControl = createAudioControl(text, styleId);
+        messageDiv.appendChild(audioControl);
+    }
+
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return messageDiv;
+}
+
+// グローバルスコープにshowUserMessage関数を定義
+function showUserMessage(message) {
+    console.log("User Message:", message);
+    addMessage(message, 'user');
+}
+
 class TtsQuestV3Voicevox extends Audio {
     constructor(styleId, text, ttsQuestApiKey) {
         super();
@@ -213,18 +303,15 @@ async function playVoice(voice_path, voicevox_id, message) {
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
-    const chatMessages = document.getElementById('chat-messages');
+    chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
-    const speakerASelect = document.getElementById('speaker-a');
-    const speakerBSelect = document.getElementById('speaker-b');
-    const styleASelect = document.getElementById('style-a');
-    const styleBSelect = document.getElementById('style-b');
+    speakerASelect = document.getElementById('speaker-a');
+    speakerBSelect = document.getElementById('speaker-b');
+    styleASelect = document.getElementById('style-a');
+    styleBSelect = document.getElementById('style-b');
     const themeToggle = document.getElementById('theme-toggle');
-    let speakers = [];
-    let TTS_QUEST_API_KEY = '';
-    let currentTheme = localStorage.getItem('theme') || 'light';
-
+    
     // Create standing character elements
     const leftCharacter = document.createElement('div');
     leftCharacter.classList.add('standing-character', 'left');
@@ -368,11 +455,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error('Error loading speakers:', error);
     }
 
-    function getCurrentTime() {
-        const now = new Date();
-        return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-    }
-
     let audio = null; // Added audio variable declaration here
     let isPlaying = false; // Added isPlaying variable declaration here
 
@@ -425,6 +507,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         audioControl.appendChild(statusIndicator);
         return audioControl;
     };
+
 
     function addMessage(text, type) {
         const messageDiv = document.createElement('div');
@@ -644,11 +727,5 @@ document.addEventListener('DOMContentLoaded', async function () {
                 console.log("Elements not ready after RAF, skipping");
             }
         });
-    }
-
-    function showUserMessage(message) {
-        console.log("User Message:", message);
-        // addMessage を使用してユーザーメッセージを表示
-        addMessage(message, 'user');
     }
 });
