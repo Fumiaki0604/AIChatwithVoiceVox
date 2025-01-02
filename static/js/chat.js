@@ -226,8 +226,7 @@ function showUserMessage(message) {
 class TtsQuestV3Voicevox extends Audio {
     constructor(styleId, text, ttsQuestApiKey) {
         super();
-        // VoiceVox speaker IDをスタイルIDから取得 (1-20の範囲)
-        this.speakerId = parseInt(styleId) || 1;
+        this.speakerId = styleId;  // スタイルIDをそのまま使用
         this.text = text;
         this.ttsQuestApiKey = ttsQuestApiKey;
         this.isInitialized = false;
@@ -264,7 +263,6 @@ class TtsQuestV3Voicevox extends Audio {
                         console.error('API Error Response:', errResponse);
                         throw new Error(`HTTP error! status: ${response.status}, message: ${errResponse.message || 'Unknown error'}`);
                     }).catch(jsonError => {
-                        // JSONパースに失敗した場合のフォールバック
                         throw new Error(`HTTP error! status: ${response.status}`);
                     });
                 }
@@ -327,10 +325,10 @@ class TtsQuestV3Voicevox extends Audio {
     }
 }
 
-async function play(text, id) {
-    console.log("Starting play function with:", {text, id});
+async function play(text, styleId) {
+    console.log("Starting play function with:", {text, styleId});
     var ttsQuestApiKey = 'p-s205e-L706841'; // optional
-    var audio = new TtsQuestV3Voicevox(id, text, ttsQuestApiKey);
+    var audio = new TtsQuestV3Voicevox(styleId, text, ttsQuestApiKey);
 
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
@@ -342,7 +340,7 @@ async function play(text, id) {
             try {
                 const mp3Url = await audio.play();
                 console.log("Received MP3 URL:", mp3Url);
-                await playVoice(mp3Url, id, text);
+                await playVoice(mp3Url, styleId, text);
                 resolve();
             } catch (error) {
                 console.error("Error playing audio:", error);
