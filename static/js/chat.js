@@ -38,7 +38,7 @@ function getCurrentTime() {
     return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 }
 
-// createAudioControl関数をグローバルスコープに移動
+// createAudioControl関数の修正部分
 function createAudioControl(text, styleId) {
     const audioControl = document.createElement('div');
     audioControl.classList.add('audio-control');
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     styleASelect = document.getElementById('style-a');
     styleBSelect = document.getElementById('style-b');
     const themeToggle = document.getElementById('theme-toggle');
-    
+
     // Create standing character elements
     const leftCharacter = document.createElement('div');
     leftCharacter.classList.add('standing-character', 'left');
