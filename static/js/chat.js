@@ -1,19 +1,22 @@
 /* 音声データをAudioBufferに変換 */
 async function preparedBuffer(voice_path) {
-    const ctx = new AudioContext()
-    const res = await fetch(voice_path)
-    const arrayBuffer = await res.arrayBuffer()
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
-
+    console.log("Preparing buffer for voice path:", voice_path);
+    const ctx = new AudioContext();
+    const res = await fetch(voice_path);
+    if (!res.ok) {
+        throw new Error(`Failed to fetch audio data: ${res.status} ${res.statusText}`);
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
     return {audioBuffer, ctx};
 }
 
 /* 入力ノード、Analyserノードを生成し、出力層に接続 */
 function buildNodes(audioBuffer, ctx) {
-    const audioSrc = new AudioBufferSourceNode(ctx, { buffer: audioBuffer })
-    const analyser = new AnalyserNode(ctx)
-    analyser.fftSize = 512
-    audioSrc.connect(analyser).connect(ctx.destination)
+    const audioSrc = new AudioBufferSourceNode(ctx, { buffer: audioBuffer });
+    const analyser = new AnalyserNode(ctx);
+    analyser.fftSize = 512;
+    audioSrc.connect(analyser).connect(ctx.destination);
     return {audioSrc, analyser};
 }
 
@@ -99,23 +102,22 @@ class TtsQuestV3Voicevox extends Audio {
 
     play() {
         return new Promise((resolve, reject) => {
-            super.play()
-                .then(() => {
-                    resolve(this.src);
-                })
-                .catch(error => {
-                    console.error('Error playing audio:', error);
-                    reject(error);
-                });
+            if (!this.src) {
+                reject(new Error('音声URLが設定されていません'));
+                return;
+            }
+
+            console.log('Playing audio with URL:', this.src);
+            resolve(this.src);
         });
     }
 }
 
-let ctx = null // AudioContext: Nodeの作成、音声のデコードの制御などを行う
-let audioSrc = null // AudioBufferSourceNode: 音声入力ノード
-let analyser = null // AnalyserNode: 音声解析ノード
-let sampleInterval = null
-let prevSpec = 0 // 前回のサンプリングで取得したスペクトルの配列
+let ctx = null; // AudioContext: Nodeの作成、音声のデコードの制御などを行う
+let audioSrc = null; // AudioBufferSourceNode: 音声入力ノード
+let analyser = null; // AnalyserNode: 音声解析ノード
+let sampleInterval = null;
+let prevSpec = 0; // 前回のサンプリングで取得したスペクトルの配列
 
 /* 音声再生処理 */
 async function playVoice(voice_path, voicevox_id, message) {
@@ -170,17 +172,33 @@ async function playVoice(voice_path, voicevox_id, message) {
 
 async function play(text, id) {
     console.log("Starting play function with:", {text, id});
-    var ttsQuestApiKey = 'p-s205e-L706841' // optional
+    var ttsQuestApiKey = 'p-s205e-L706841'; // optional
     var audio = new TtsQuestV3Voicevox(id, text, ttsQuestApiKey);
 
-    try {
-        // mp3 URLを取得します
-        var mp3Url = await audio.play();
-        console.log("Received MP3 URL:", mp3Url);
-        await playVoice(mp3Url, id, text);
-    } catch (error) {
-        console.error("Error in play function:", error);
-    }
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new Error('音声生成がタイムアウトしました'));
+        }, 30000); // 30秒タイムアウト
+
+        audio.addEventListener('tts-ready', async () => {
+            clearTimeout(timeout);
+            try {
+                const mp3Url = await audio.play();
+                console.log("Received MP3 URL:", mp3Url);
+                await playVoice(mp3Url, id, text);
+                resolve();
+            } catch (error) {
+                console.error("Error playing audio:", error);
+                reject(error);
+            }
+        });
+
+        audio.addEventListener('tts-error', (event) => {
+            clearTimeout(timeout);
+            console.error("TTS Error:", event.detail);
+            reject(new Error(event.detail));
+        });
+    });
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -379,6 +397,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             try {
                 console.log("Playing audio for styleId:", styleId);
                 await play(text, styleId);
+                statusIndicator.textContent = '再生完了';
             } catch (error) {
                 console.error('Play method error:', error);
                 statusIndicator.textContent = '再生エラー';
