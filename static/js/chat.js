@@ -517,16 +517,28 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             console.log("Executing blink");
             isBlinking = true;
-            eyesImage.src = '/static/assets/metan_eye_close.png';
 
-            // まばたきの持続時間（100ms）
-            setTimeout(() => {
-                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                    console.log("Opening eyes");
-                    eyesImage.src = '/static/assets/metan_eye_open.png';
-                    isBlinking = false;
-                }
-            }, 100);
+            // 目を閉じる画像を読み込み
+            const closedEyeImage = new Image();
+            closedEyeImage.onload = () => {
+                eyesImage.src = closedEyeImage.src;
+                console.log("Eyes closed at:", new Date().toISOString());
+
+                // まばたきの持続時間（150-200ms）
+                setTimeout(() => {
+                    if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                        // 目を開く画像を読み込み
+                        const openEyeImage = new Image();
+                        openEyeImage.onload = () => {
+                            eyesImage.src = openEyeImage.src;
+                            console.log("Eyes opened at:", new Date().toISOString());
+                            isBlinking = false;
+                        };
+                        openEyeImage.src = '/static/assets/metan_eye_open.png';
+                    }
+                }, 150 + Math.random() * 50); // ランダムな持続時間を追加
+            };
+            closedEyeImage.src = '/static/assets/metan_eye_close.png';
         }
 
         function startBlinking() {
