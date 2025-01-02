@@ -36,7 +36,8 @@ class TtsQuestV3Voicevox extends Audio {
         const params = {
             key: this.ttsQuestApiKey,
             speaker: this.styleId,
-            text: this.text
+            text: this.text,
+            format: 'mp3'
         };
         const query = new URLSearchParams(params);
         this.startGeneration(query);
@@ -47,7 +48,10 @@ class TtsQuestV3Voicevox extends Audio {
 
         const apiUrl = 'https://api.tts.quest/v3/voicevox/synthesis';
         this.dispatchEvent(new CustomEvent('tts-loading'));
-        console.log('Starting TTS generation...');
+        console.log('Starting TTS generation...', {
+            url: apiUrl,
+            params: Object.fromEntries(query)
+        });
 
         fetch(apiUrl + '?' + query.toString())
             .then(response => {
@@ -111,6 +115,37 @@ class TtsQuestV3Voicevox extends Audio {
             resolve(this.src);
         });
     }
+}
+
+async function play(text, id) {
+    console.log("Starting play function with:", {text, id});
+    var ttsQuestApiKey = 'p-s205e-L706841'; // optional
+    var audio = new TtsQuestV3Voicevox(id, text, ttsQuestApiKey);
+
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new Error('音声生成がタイムアウトしました'));
+        }, 30000); // 30秒タイムアウト
+
+        audio.addEventListener('tts-ready', async () => {
+            clearTimeout(timeout);
+            try {
+                const mp3Url = await audio.play();
+                console.log("Received MP3 URL:", mp3Url);
+                await playVoice(mp3Url, id, text);
+                resolve();
+            } catch (error) {
+                console.error("Error playing audio:", error);
+                reject(error);
+            }
+        });
+
+        audio.addEventListener('tts-error', (event) => {
+            clearTimeout(timeout);
+            console.error("TTS Error:", event.detail);
+            reject(new Error(event.detail));
+        });
+    });
 }
 
 let ctx = null; // AudioContext: Nodeの作成、音声のデコードの制御などを行う
