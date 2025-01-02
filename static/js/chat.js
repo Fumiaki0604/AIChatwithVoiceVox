@@ -23,7 +23,8 @@ function buildNodes(audioBuffer, ctx) {
 class TtsQuestV3Voicevox extends Audio {
     constructor(styleId, text, ttsQuestApiKey) {
         super();
-        this.styleId = styleId;
+        // VoiceVox speaker IDをスタイルIDから取得 (1-20の範囲)
+        this.speakerId = parseInt(styleId) || 1;
         this.text = text;
         this.ttsQuestApiKey = ttsQuestApiKey;
         this.isInitialized = false;
@@ -35,7 +36,7 @@ class TtsQuestV3Voicevox extends Audio {
     initialize() {
         const params = {
             key: this.ttsQuestApiKey,
-            speaker: this.styleId,
+            speaker: this.speakerId,
             text: this.text,
             format: 'mp3'
         };
