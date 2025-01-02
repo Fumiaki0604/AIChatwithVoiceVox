@@ -27,10 +27,57 @@ let speakerBSelect;
 let styleASelect;
 let styleBSelect;
 let speakers = [];
+let TTS_QUEST_API_KEY = '';
+let currentTheme = localStorage.getItem('theme') || 'light';
+let audio = null;
+let isPlaying = false;
 
 function getCurrentTime() {
     const now = new Date();
     return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+}
+
+// createAudioControl関数をグローバルスコープに移動
+function createAudioControl(text, styleId) {
+    const audioControl = document.createElement('div');
+    audioControl.classList.add('audio-control');
+
+    const playButton = document.createElement('button');
+    playButton.innerHTML = '<i class="fas fa-play"></i>';
+    playButton.disabled = !TTS_QUEST_API_KEY;
+
+    const statusIndicator = document.createElement('span');
+    statusIndicator.classList.add('status-indicator');
+    statusIndicator.textContent = '準備中...';
+
+    playButton.addEventListener('click', async () => {
+        if (isPlaying) {
+            audio.pause();
+            audio.currentTime = 0;
+            isPlaying = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+            statusIndicator.textContent = '再生可能';
+            return;
+        }
+
+        try {
+            console.log("Playing audio for styleId:", styleId);
+            isPlaying = true;
+            playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            await play(text, styleId);
+            statusIndicator.textContent = '再生完了';
+            isPlaying = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+        } catch (error) {
+            console.error('Play method error:', error);
+            statusIndicator.textContent = '再生エラー';
+            playButton.disabled = true;
+        }
+    });
+
+    audioControl.appendChild(playButton);
+    audioControl.appendChild(statusIndicator);
+    return audioControl;
 }
 
 // メッセージ表示関数をグローバルスコープに移動
@@ -455,59 +502,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error('Error loading speakers:', error);
     }
 
-    let audio = null; // Added audio variable declaration here
+
     let isPlaying = false; // Added isPlaying variable declaration here
 
-    const createAudioControl = (text, styleId) => {
-        const audioControl = document.createElement('div');
-        audioControl.classList.add('audio-control');
-
-        const playButton = document.createElement('button');
-        playButton.innerHTML = '<i class="fas fa-play"></i>';
-        playButton.disabled = !TTS_QUEST_API_KEY;
-
-        const statusIndicator = document.createElement('span');
-        statusIndicator.classList.add('status-indicator');
-        statusIndicator.textContent = '準備中...';
-
-
-        const initializeAudio = () => {
-            if (!audio) {
-                audio = new TtsQuestV3Voicevox(styleId, text, TTS_QUEST_API_KEY);
-            }
-            return audio;
-        };
-
-        playButton.addEventListener('click', async () => {
-            if (isPlaying) {
-                audio.pause();
-                audio.currentTime = 0;
-                isPlaying = false;
-                playButton.innerHTML = '<i class="fas fa-play"></i>';
-                statusIndicator.textContent = '再生可能';
-                return;
-            }
-
-            try {
-                console.log("Playing audio for styleId:", styleId);
-                isPlaying = true; // Set isPlaying to true before playing
-                playButton.innerHTML = '<i class="fas fa-pause"></i>'; // Change button to pause
-                await play(text, styleId);
-                statusIndicator.textContent = '再生完了';
-                isPlaying = false; // Set isPlaying to false after playing
-                playButton.innerHTML = '<i class="fas fa-play"></i>'; // Change button back to play
-            } catch (error) {
-                console.error('Play method error:', error);
-                statusIndicator.textContent = '再生エラー';
-                playButton.disabled = true;
-            }
-        });
-
-        audioControl.appendChild(playButton);
-        audioControl.appendChild(statusIndicator);
-        return audioControl;
-    };
-
+    //The original createAudioControl function is now defined in the global scope above.
 
     function addMessage(text, type) {
         const messageDiv = document.createElement('div');
