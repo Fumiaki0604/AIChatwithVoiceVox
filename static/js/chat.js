@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         styleSelect.innerHTML = '';
         speaker.styles.forEach(style => {
             const option = document.createElement('option');
-            option.value = style.id;
+            option.value = style.id;  // スピーカーの各スタイルに対応する正しいIDを使用
             option.textContent = style.name;
             styleSelect.appendChild(option);
         });
@@ -497,20 +497,41 @@ document.addEventListener('DOMContentLoaded', async function () {
         populateSpeakerSelect(speakerASelect);
         populateSpeakerSelect(speakerBSelect);
 
+        // 初期話者の設定
         speakerASelect.value = speakers.find(s => s.name === 'ずんだもん')?.speaker_uuid || speakers[0]?.speaker_uuid;
         speakerBSelect.value = speakers.find(s => s.name === '四国めたん')?.speaker_uuid || speakers[1]?.speaker_uuid;
 
+        // 初期スタイルの設定
         updateStyles(speakerASelect.value, styleASelect);
         updateStyles(speakerBSelect.value, styleBSelect);
+
+        // デフォルトのスタイルを「あまあま」に設定（存在する場合）
+        const setDefaultStyle = (styleSelect, speaker) => {
+            const amaama = speaker.styles.find(s => s.name === 'あまあま');
+            if (amaama) {
+                styleSelect.value = amaama.id;
+            }
+        };
+
+        const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
+        const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
+
+        if (speakerA) setDefaultStyle(styleASelect, speakerA);
+        if (speakerB) setDefaultStyle(styleBSelect, speakerB);
+
         updateStandingCharacters();
 
         speakerASelect.addEventListener('change', () => {
             updateStyles(speakerASelect.value, styleASelect);
+            const newSpeaker = speakers.find(s => s.speaker_uuid === speakerASelect.value);
+            if (newSpeaker) setDefaultStyle(styleASelect, newSpeaker);
             updateStandingCharacters();
         });
 
         speakerBSelect.addEventListener('change', () => {
             updateStyles(speakerBSelect.value, styleBSelect);
+            const newSpeaker = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
+            if (newSpeaker) setDefaultStyle(styleBSelect, newSpeaker);
             updateStandingCharacters();
         });
 
