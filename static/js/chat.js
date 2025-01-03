@@ -29,24 +29,23 @@ function syncLip(spectrums, voicevox_id) {
     console.log("Previous spectrum:", prevSpec);
     console.log("Difference:", prevSpec - totalSpectrum);
 
-    const speaker = speakers.find(s => s.speaker_uuid === voicevox_id);
-    const characterName = speaker ? speaker.name : 'Unknown';
-    // selectorを修正: positionに依存しないようにする
-    const selector = `.standing-character .character-mouth`; // すべてのキャラクターの口を動かす
-    const mouseElement = document.querySelector(selector);
-
-    if (mouseElement) {
-        if (totalSpectrum > prevSpec) {
-            mouseElement.style.backgroundImage = `url('/static/assets/${characterName.replace(/ /g, '_')}_mouse_open.png')`;
-        } else if (prevSpec - totalSpectrum < 250) {
-            mouseElement.style.backgroundImage = `url('/static/assets/${characterName.replace(/ /g, '_')}_mouse_open_middle.png')`;
-        } else if (prevSpec - totalSpectrum < 500) {
-            mouseElement.style.backgroundImage = `url('/static/assets/${characterName.replace(/ /g, '_')}_mouse_close_middle.png')`;
+    // 四国めたん用のリップシンク
+    if (voicevox_id == 2) { // 四国めたん（ノーマル）: 2, ツンツン: 3, あまあま: 4, セクシー: 6
+        const mouseElement = document.querySelector('.standing-character.right .character-mouth');
+        console.log("mouseElement:", mouseElement);
+        if (mouseElement) {
+            if (totalSpectrum > prevSpec) {
+                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+            } else {
+                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            }
         } else {
-            mouseElement.style.backgroundImage = `url('/static/assets/${characterName.replace(/ /g, '_')}_mouse_close.png')`;
+            console.log("該当なし");
         }
-    } else {
-        console.log("該当なし");
     }
 
     prevSpec = totalSpectrum;
@@ -456,7 +455,20 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Update right character (Speaker B)
         console.log("Updating right character (Speaker B):", speakerB?.name);
-        if (speakerB) {
+        if (speakerB && speakerB.name === '四国めたん') {
+            rightCharacter.innerHTML = `
+                <div class="character-container">
+                    <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                    <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                    <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
+                </div>
+            `;
+            // DOMの更新が完了するのを待ってから初期化
+            Promise.resolve().then(() => {
+                console.log("Setting up right character blinking");
+                setupBlinking(rightCharacter);
+            });
+        } else if (speakerB) {
             rightCharacter.innerHTML = `
                 <div class="character-container">
                     <img class="standing-character-base" src="/static/assets/standing_${speakerB.name.replace(/ /g, '_')}.png" alt="${speakerB.name}">
