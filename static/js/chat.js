@@ -29,24 +29,24 @@ function syncLip(spectrums, voicevox_id) {
     console.log("Previous spectrum:", prevSpec);
     console.log("Difference:", prevSpec - totalSpectrum);
 
-    // 四国めたん用のリップシンク
-    if (voicevox_id == 2) { // 四国めたん（ノーマル）: 2, ツンツン: 3, あまあま: 4, セクシー: 6
-        const mouseElement = document.querySelector('.standing-character.right .character-mouth');
-        console.log("mouseElement:", mouseElement);
-        if (mouseElement) {
-            if (totalSpectrum > prevSpec) {
-                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
-            } else if (prevSpec - totalSpectrum < 250) {
-                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
-            } else if (prevSpec - totalSpectrum < 500) {
-                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
-            } else {
-                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
-            }
+    const speaker = speakers.find(s => s.speaker_uuid === voicevox_id);
+    const characterName = speaker ? speaker.name : 'Unknown';
+    // selectorを修正: positionに依存しないようにする
+    const selector = `.standing-character .character-mouth`; // すべてのキャラクターの口を動かす
+    const mouseElement = document.querySelector(selector);
+
+    if (mouseElement) {
+        if (totalSpectrum > prevSpec) {
+            mouseElement.style.backgroundImage = `url('/static/assets/${characterName.replace(/ /g, '_')}_mouse_open.png')`;
+        } else if (prevSpec - totalSpectrum < 250) {
+            mouseElement.style.backgroundImage = `url('/static/assets/${characterName.replace(/ /g, '_')}_mouse_open_middle.png')`;
+        } else if (prevSpec - totalSpectrum < 500) {
+            mouseElement.style.backgroundImage = `url('/static/assets/${characterName.replace(/ /g, '_')}_mouse_close_middle.png')`;
+        } else {
+            mouseElement.style.backgroundImage = `url('/static/assets/${characterName.replace(/ /g, '_')}_mouse_close.png')`;
         }
-        else{
-            console.log("該当なし");
-        }
+    } else {
+        console.log("該当なし");
     }
 
     prevSpec = totalSpectrum;
@@ -195,6 +195,7 @@ function addMessage(text, type) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     messageDiv.classList.add(`${type}-message`);
+    messageDiv.id = `message-${Date.now()}`; // Add unique ID to each message
 
     // Add icon
     const iconDiv = document.createElement('div');
@@ -436,10 +437,13 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Update left character (Speaker A)
         console.log("Updating left character (Speaker A):", speakerA?.name);
-        if (speakerA && speakerA.name === '四国めたん') {
+        if (speakerA) {
             leftCharacter.innerHTML = `
-                <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
-                <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                <div class="character-container">
+                    <img class="standing-character-base" src="/static/assets/standing_${speakerA.name.replace(/ /g, '_')}.png" alt="${speakerA.name}">
+                    <img class="standing-character-eyes" src="/static/assets/${speakerA.name.replace(/ /g, '_')}_eye_open.png" alt="${speakerA.name}目">
+                    <div class="character-mouth" style="background-image: url('/static/assets/${speakerA.name.replace(/ /g, '_')}_mouse_close.png')"></div>
+                </div>
             `;
             // DOMの更新が完了するのを待ってから初期化
             Promise.resolve().then(() => {
@@ -452,12 +456,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Update right character (Speaker B)
         console.log("Updating right character (Speaker B):", speakerB?.name);
-        if (speakerB && speakerB.name === '四国めたん') {
+        if (speakerB) {
             rightCharacter.innerHTML = `
                 <div class="character-container">
-                    <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
-                    <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
-                    <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
+                    <img class="standing-character-base" src="/static/assets/standing_${speakerB.name.replace(/ /g, '_')}.png" alt="${speakerB.name}">
+                    <img class="standing-character-eyes" src="/static/assets/${speakerB.name.replace(/ /g, '_')}_eye_open.png" alt="${speakerB.name}目">
+                    <div class="character-mouth" style="background-image: url('/static/assets/${speakerB.name.replace(/ /g, '_')}_mouse_close.png')"></div>
                 </div>
             `;
             // DOMの更新が完了するのを待ってから初期化
@@ -577,11 +581,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
 
+
     async function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
 
-        addMessage(message, 'user');
+        const userMessage = addMessage(message, 'user');
         userInput.value = '';
 
         try {
