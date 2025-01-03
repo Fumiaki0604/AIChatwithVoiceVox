@@ -22,25 +22,26 @@ function buildNodes(audioBuffer, ctx) {
 
 /* スペクトルをもとにリップシンクを行う */
 function syncLip(spectrums, voicevox_id) {
-    let totalSpec = 0;
-    const mouseElement = document.getElementById('mouse');
     const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2); // 音声の主要周波数帯を取得 
-    const totalSpectrum = vocalRangeSpectrums.reduce(function(a, x) { return a + x }); // 周波数帯内の全スペクトラムの合計を算出
+    const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0); // 周波数帯内の全スペクトラムの合計を算出
 
     console.log("Current total spectrum:", totalSpectrum);
     console.log("Previous spectrum:", prevSpec);
     console.log("Difference:", prevSpec - totalSpectrum);
 
     // 四国めたん用のリップシンク
-    if (voicevox_id == 6) {
-        if (totalSpectrum > prevSpec) {
-            mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
-        } else if (prevSpec - totalSpectrum < 250) {
-            mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
-        } else if (prevSpec - totalSpectrum < 500) {
-            mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
-        } else {
-            mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+    if (voicevox_id == 2) { // 四国めたん（ノーマル）: 2, ツンツン: 3, あまあま: 4, セクシー: 6
+        const mouseElement = document.querySelector('.standing-character.right .character-mouth');
+        if (mouseElement) {
+            if (totalSpectrum > prevSpec) {
+                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+            } else {
+                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            }
         }
     }
 
@@ -60,6 +61,12 @@ let currentTheme = localStorage.getItem('theme') || 'light';
 let audio = null;
 let isPlaying = false;
 let currentStatusIndicator = null;
+let ctx = null; // AudioContext: Nodeの作成、音声のデコードの制御などを行う
+let audioSrc = null; // AudioBufferSourceNode: 音声入力ノード
+let analyser = null; // AnalyserNode: 音声解析ノード
+let sampleInterval = null;
+let prevSpec = 0; // 前回のサンプリングで取得したスペクトルの合計値
+
 
 function getCurrentTime() {
     const now = new Date();
@@ -387,12 +394,6 @@ async function play(text, styleId) {
     });
 }
 
-let ctx = null; // AudioContext: Nodeの作成、音声のデコードの制御などを行う
-let audioSrc = null; // AudioBufferSourceNode: 音声入力ノード
-let analyser = null; // AnalyserNode: 音声解析ノード
-let sampleInterval = null;
-let prevSpec = 0; // 前回のサンプリングで取得したスペクトルの配列
-
 
 document.addEventListener('DOMContentLoaded', async function () {
     chatMessages = document.getElementById('chat-messages');
@@ -451,6 +452,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             rightCharacter.innerHTML = `
                 <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
                 <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
             `;
             // DOMの更新が完了するのを待ってから初期化
             Promise.resolve().then(() => {
