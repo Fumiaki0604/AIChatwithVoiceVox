@@ -20,6 +20,34 @@ function buildNodes(audioBuffer, ctx) {
     return {audioSrc, analyser};
 }
 
+/* スペクトルをもとにリップシンクを行う */
+function syncLip(spectrums, voicevox_id) {
+    let totalSpec = 0;
+    const mouseElement = document.getElementById('mouse');
+    const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2); // 音声の主要周波数帯を取得 
+    const totalSpectrum = vocalRangeSpectrums.reduce(function(a, x) { return a + x }); // 周波数帯内の全スペクトラムの合計を算出
+
+    console.log("Current total spectrum:", totalSpectrum);
+    console.log("Previous spectrum:", prevSpec);
+    console.log("Difference:", prevSpec - totalSpectrum);
+
+    // 四国めたん用のリップシンク
+    if (voicevox_id == 6) {
+        if (totalSpectrum > prevSpec) {
+            mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+        } else if (prevSpec - totalSpectrum < 250) {
+            mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+        } else if (prevSpec - totalSpectrum < 500) {
+            mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+        } else {
+            mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+        }
+    }
+
+    prevSpec = totalSpectrum;
+}
+
+
 // グローバル変数の定義
 let chatMessages;
 let speakerASelect;
@@ -107,6 +135,7 @@ async function playVoice(voice_path, voicevox_id, message) {
             let spectrums = new Uint8Array(analyser.fftSize);
             analyser.getByteFrequencyData(spectrums);
             console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
+            syncLip(spectrums, voicevox_id); //リップシンクを追加
         }, 50);
 
         // 音声終了時のコールバック： リソースの開放、無効化していたボタンを有効化する
