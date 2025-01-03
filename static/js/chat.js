@@ -43,7 +43,8 @@ function syncLip(spectrums, voicevox_id) {
             } else {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
-        } else {
+        }
+        else{
             console.log("該当なし");
         }
     }
@@ -194,7 +195,6 @@ function addMessage(text, type) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     messageDiv.classList.add(`${type}-message`);
-    messageDiv.id = `message-${Date.now()}`; // Add unique ID to each message
 
     // Add icon
     const iconDiv = document.createElement('div');
@@ -438,24 +438,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating left character (Speaker A):", speakerA?.name);
         if (speakerA && speakerA.name === '四国めたん') {
             leftCharacter.innerHTML = `
-                <div class="character-container">
-                    <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
-                    <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
-                    <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
-                </div>
-            `;
-            // DOMの更新が完了するのを待ってから初期化
-            Promise.resolve().then(() => {
-                console.log("Setting up left character blinking");
-                setupBlinking(leftCharacter);
-            });
-        } else if (speakerA) {
-            leftCharacter.innerHTML = `
-                <div class="character-container">
-                    <img class="standing-character-base" src="/static/assets/standing_${speakerA.name.replace(/ /g, '_')}.png" alt="${speakerA.name}">
-                    <img class="standing-character-eyes" src="/static/assets/${speakerA.name.replace(/ /g, '_')}_eye_open.png" alt="${speakerA.name}目">
-                    <div class="character-mouth" style="background-image: url('/static/assets/${speakerA.name.replace(/ /g, '_')}_mouse_close.png')"></div>
-                </div>
+                <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
             `;
             // DOMの更新が完了するのを待ってから初期化
             Promise.resolve().then(() => {
@@ -474,19 +458,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                     <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
                     <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
                     <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
-                </div>
-            `;
-            // DOMの更新が完了するのを待ってから初期化
-            Promise.resolve().then(() => {
-                console.log("Setting up right character blinking");
-                setupBlinking(rightCharacter);
-            });
-        } else if (speakerB) {
-            rightCharacter.innerHTML = `
-                <div class="character-container">
-                    <img class="standing-character-base" src="/static/assets/standing_${speakerB.name.replace(/ /g, '_')}.png" alt="${speakerB.name}">
-                    <img class="standing-character-eyes" src="/static/assets/${speakerB.name.replace(/ /g, '_')}_eye_open.png" alt="${speakerB.name}目">
-                    <div class="character-mouth" style="background-image: url('/static/assets/${speakerB.name.replace(/ /g, '_')}_mouse_close.png')"></div>
                 </div>
             `;
             // DOMの更新が完了するのを待ってから初期化
@@ -606,12 +577,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
 
-
     async function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
 
-        const userMessage = addMessage(message, 'user');
+        addMessage(message, 'user');
         userInput.value = '';
 
         try {
