@@ -6,6 +6,59 @@ let sampleInterval = null;
 let prevSpec = 0;
 const mouseElement = document.getElementById('mouse');
 
+/* 音声設定の初期化 */
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSpeakerSelects();
+});
+
+function initializeSpeakerSelects() {
+    const speakerA = document.getElementById('speaker-a');
+    const speakerB = document.getElementById('speaker-b');
+    const styleA = document.getElementById('style-a');
+    const styleB = document.getElementById('style-b');
+
+    if (speakerA && speakerB && styleA && styleB) {
+        // スピーカーの選択肢を設定
+        const speakers = [
+            { id: 6, name: "四国めたん" },
+            { id: 8, name: "ずんだもん" }
+        ];
+
+        // スピーカーAの選択肢を追加
+        speakers.forEach(speaker => {
+            const option = document.createElement('option');
+            option.value = speaker.id;
+            option.textContent = speaker.name;
+            speakerA.appendChild(option);
+        });
+
+        // スピーカーBの選択肢を追加（コピー）
+        speakerA.querySelectorAll('option').forEach(option => {
+            speakerB.appendChild(option.cloneNode(true));
+        });
+
+        // 声色の選択肢を設定
+        const styles = [
+            { id: 1, name: "通常" },
+            { id: 2, name: "かわいい" },
+            { id: 3, name: "セクシー" }
+        ];
+
+        // 声色Aの選択肢を追加
+        styles.forEach(style => {
+            const option = document.createElement('option');
+            option.value = style.id;
+            option.textContent = style.name;
+            styleA.appendChild(option);
+        });
+
+        // 声色Bの選択肢を追加（コピー）
+        styleA.querySelectorAll('option').forEach(option => {
+            styleB.appendChild(option.cloneNode(true));
+        });
+    }
+}
+
 /* 音声再生時のリップシンク処理 */
 async function playVoiceWithLipSync(audioUrl, speakerId) {
     try {
@@ -79,12 +132,13 @@ function syncLip(spectrums, speakerId) {
     prevSpec = currentSpec;
 }
 
-if (type === 'user') {
-    const userIcon = document.createElement('img');
-    userIcon.src = 'static/assets/kkrn_icon_user_4.png';
-    userIcon.alt = 'User';
-    userIcon.classList.add('user-icon');
-    iconDiv.appendChild(userIcon);
-} else {
-    //This part remains empty as in original code
+/* メッセージ作成時のアイコン設定 */
+function createMessageIcon(type, iconDiv) {
+    if (type === 'user') {
+        const userIcon = document.createElement('img');
+        userIcon.src = 'static/assets/kkrn_icon_user_4.png';
+        userIcon.alt = 'User';
+        userIcon.classList.add('user-icon');
+        iconDiv.appendChild(userIcon);
+    }
 }
