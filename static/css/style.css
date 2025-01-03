@@ -263,11 +263,18 @@ body {
     z-index: 1;
 }
 
+.character-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
 .standing-character-base {
     width: 100%;
     height: 100%;
     object-fit: contain;
     position: absolute;
+    z-index: 1;
 }
 
 .standing-character-eyes {
@@ -277,6 +284,17 @@ body {
     position: absolute;
     opacity: 1;
     transition: opacity 0.1s;
+    z-index: 2;
+}
+
+.character-mouth {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 3;
 }
 
 .standing-character.blinking .standing-character-eyes {
@@ -296,7 +314,6 @@ body {
     right: 0;
 }
 
-/* Adjust chat container to not overlap with standing characters */
 @media (min-width: 1500px) {
     .container {
         margin: 0 350px;

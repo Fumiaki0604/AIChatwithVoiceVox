@@ -32,6 +32,7 @@ function syncLip(spectrums, voicevox_id) {
     // 四国めたん用のリップシンク
     if (voicevox_id == 2) { // 四国めたん（ノーマル）: 2, ツンツン: 3, あまあま: 4, セクシー: 6
         const mouseElement = document.querySelector('.standing-character.right .character-mouth');
+        console.log("mouseElement:", mouseElement);
         if (mouseElement) {
             if (totalSpectrum > prevSpec) {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
@@ -42,6 +43,9 @@ function syncLip(spectrums, voicevox_id) {
             } else {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
+        }
+        else{
+            console.log("該当なし");
         }
     }
 
@@ -450,9 +454,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating right character (Speaker B):", speakerB?.name);
         if (speakerB && speakerB.name === '四国めたん') {
             rightCharacter.innerHTML = `
-                <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
-                <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
-                <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
+                <div class="character-container">
+                    <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                    <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                    <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
+                </div>
             `;
             // DOMの更新が完了するのを待ってから初期化
             Promise.resolve().then(() => {
