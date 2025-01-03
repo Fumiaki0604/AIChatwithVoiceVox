@@ -436,7 +436,20 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Update left character (Speaker A)
         console.log("Updating left character (Speaker A):", speakerA?.name);
-        if (speakerA) {
+        if (speakerA && speakerA.name === '四国めたん') {
+            leftCharacter.innerHTML = `
+                <div class="character-container">
+                    <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                    <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                    <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
+                </div>
+            `;
+            // DOMの更新が完了するのを待ってから初期化
+            Promise.resolve().then(() => {
+                console.log("Setting up left character blinking");
+                setupBlinking(leftCharacter);
+            });
+        } else if (speakerA) {
             leftCharacter.innerHTML = `
                 <div class="character-container">
                     <img class="standing-character-base" src="/static/assets/standing_${speakerA.name.replace(/ /g, '_')}.png" alt="${speakerA.name}">
