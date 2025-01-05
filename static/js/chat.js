@@ -129,9 +129,11 @@ function createAudioControl(text, styleId) {
 
 /* 音声再生処理 */
 async function playVoice(voice_path, voicevox_id, message) {
-    console.log("playvoice呼び出し");
-    console.log("Voice path:", voice_path);
-    console.log("Voicevox ID:", voicevox_id);
+    console.log("Starting playVoice with:", {
+        voice_path,
+        voicevox_id,
+        message
+    });
 
     // 音声再生中はボタンを無効化し、2重で再生できないようにする
     const buttons = document.querySelectorAll('button');
@@ -140,33 +142,46 @@ async function playVoice(voice_path, voicevox_id, message) {
     });
 
     try {
-        isPlaying = true; // 再生開始時にフラグを設定
-        const {audioBuffer, ctx: newCtx} = await preparedBuffer(voice_path); // audioBuffer取得
+        const {audioBuffer, ctx: newCtx} = await preparedBuffer(voice_path);
+        console.log("Audio buffer prepared successfully");
+
         ctx = newCtx;
-        const {audioSrc: newAudioSrc, analyser: newAnalyser} = buildNodes(audioBuffer, ctx); // 入力、解析ノード作成
+        const {audioSrc: newAudioSrc, analyser: newAnalyser} = buildNodes(audioBuffer, ctx);
         audioSrc = newAudioSrc;
         analyser = newAnalyser;
-        audioSrc.start(); // 音声再生開始
 
-        // 50ms毎に音声のサンプリング→解析→リップシンクを行う
+        // 音声再生開始前に状態を更新
+        isPlaying = true;
+        if (currentStatusIndicator) {
+            currentStatusIndicator.textContent = '再生中...';
+        }
+
+        console.log("Starting audio playback");
+        audioSrc.start();
+
+        // 40ms毎に音声のサンプリング→解析→リップシンクを行う
         sampleInterval = setInterval(() => {
             let spectrums = new Uint8Array(analyser.fftSize);
             analyser.getByteFrequencyData(spectrums);
             console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
-            syncLip(spectrums, voicevox_id); //リップシンクを追加
+            syncLip(spectrums, voicevox_id);
         }, 40);
 
-        // 音声終了時のコールバック： リソースの開放、無効化していたボタンを有効化する
+        // 音声終了時のコールバック
         audioSrc.onended = () => {
+            console.log("Audio playback ended");
             clearInterval(sampleInterval);
             audioSrc = null;
             ctx.close();
             ctx = null;
             prevSpec = 0;
-            isPlaying = false; // 再生終了時にフラグをリセット
+            isPlaying = false;
+
+            // ボタンを再度有効化
             buttons.forEach(button => {
                 button.disabled = false;
             });
+
             // 音声再生完了時にステータスを更新
             if (currentStatusIndicator) {
                 currentStatusIndicator.textContent = '再生可能';
@@ -178,10 +193,22 @@ async function playVoice(voice_path, voicevox_id, message) {
         };
     } catch (error) {
         console.error('Error in playVoice:', error);
-        isPlaying = false; // エラー時にフラグをリセット
+        clearInterval(sampleInterval);
+        if (audioSrc) {
+            audioSrc.stop();
+            audioSrc = null;
+        }
+        if (ctx) {
+            ctx.close();
+            ctx = null;
+        }
+        prevSpec = 0;
+        isPlaying = false;
+
         buttons.forEach(button => {
             button.disabled = false;
         });
+
         if (currentStatusIndicator) {
             currentStatusIndicator.textContent = '再生エラー';
             const playButton = currentStatusIndicator.previousElementSibling;
@@ -390,10 +417,18 @@ async function play(text, styleId) {
             try {
                 const mp3Url = await audio.play();
                 console.log("Received MP3 URL:", mp3Url);
-                await playVoice(mp3Url, styleId, text);
-                resolve();
+                if (mp3Url) {
+                    await playVoice(mp3Url, styleId, text);
+                    resolve();
+                } else {
+                    throw new Error('音声URLの取得に失敗しました');
+                }
             } catch (error) {
                 console.error("Error playing audio:", error);
+                if (currentStatusIndicator) {
+                    currentStatusIndicator.textContent = '再生エラー';
+                }
+                isPlaying = false;
                 reject(error);
             }
         });
@@ -401,6 +436,10 @@ async function play(text, styleId) {
         audio.addEventListener('tts-error', (event) => {
             clearTimeout(timeout);
             console.error("TTS Error:", event.detail);
+            if (currentStatusIndicator) {
+                currentStatusIndicator.textContent = '再生エラー';
+            }
+            isPlaying = false;
             reject(new Error(event.detail));
         });
     });
