@@ -88,36 +88,30 @@ function createAudioControl(text, styleId) {
     audioControl.classList.add('audio-control');
 
     const playButton = document.createElement('button');
-    playButton.innerHTML = '<i class="fas fa-play"></i>';
+    playButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
     playButton.disabled = !TTS_QUEST_API_KEY;
 
     const statusIndicator = document.createElement('span');
     statusIndicator.classList.add('status-indicator');
-    statusIndicator.textContent = '再生可能';
+    statusIndicator.textContent = '再生可能';  // 初期状態を「再生可能」に変更
 
     playButton.addEventListener('click', async () => {
         if (isPlaying) {
-            if (audioSrc) {
-                audioSrc.stop(); // 再生中の音声を停止
-                clearInterval(sampleInterval);
-                if (ctx) {
-                    ctx.close();
-                    ctx = null;
-                }
-                audioSrc = null;
-                prevSpec = 0;
-                isPlaying = false;
-                playButton.innerHTML = '<i class="fas fa-play"></i>';
-                statusIndicator.textContent = '再生可能';
-            }
+            console.log("検証用");
+            audio.pause();
+            audio.currentTime = 0;
+            isPlaying = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+            statusIndicator.textContent = '再生可能';
             return;
         }
 
         try {
             console.log("Playing audio for styleId:", styleId);
-            currentStatusIndicator = statusIndicator;
-            statusIndicator.textContent = '再生中...';
+            currentStatusIndicator = statusIndicator; // 現在のステータスインジケータを保存
+            isPlaying = true;
             playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            statusIndicator.textContent = '再生中...';  // ステータスを「再生中...」に更新
             await play(text, styleId);
         } catch (error) {
             console.error('Play method error:', error);
@@ -196,6 +190,7 @@ async function playVoice(voice_path, voicevox_id, message) {
                 playButton.disabled = true;
             }
         }
+        throw error;
     }
 }
 
@@ -588,6 +583,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     } catch (error) {
         console.error('Error loading speakers:', error);
     }
+
 
 
     async function sendMessage() {
