@@ -34,22 +34,16 @@ function syncLip(spectrums, voicevox_id) {
         const mouseElement = document.querySelector('.standing-character.right .character-mouth');
         console.log("isPlaying:", isPlaying);
         if (mouseElement) {
-            if (prevSpec - totalSpectrum < -500) {
+            if (totalSpectrum > prevSpec) {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
-            } else if (prevSpec - totalSpectrum < 0) {
+            } else if (prevSpec - totalSpectrum < 250) {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
             } else if (prevSpec - totalSpectrum < 500) {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
             } else {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
-            // リップシンクが動作しない場合でも、一定の画像を表示する
-            // if (!isPlaying) {
-            //     mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
-            // }
-        }
-        
-        else{
+        } else {
             console.log("該当なし");
         }
     }
@@ -444,6 +438,7 @@ async function play(text, styleId) {
         });
     });
 }
+
 
 
 document.addEventListener('DOMContentLoaded', async function () {
