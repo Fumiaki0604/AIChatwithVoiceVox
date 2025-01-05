@@ -32,18 +32,23 @@ function syncLip(spectrums, voicevox_id) {
     // 四国めたん用のリップシンク
     if (voicevox_id == 2) { // 四国めたん（ノーマル）: 2, ツンツン: 3, あまあま: 4, セクシー: 6
         const mouseElement = document.querySelector('.standing-character.right .character-mouth');
-        console.log("mouseElement:", mouseElement);
+        console.log("isPlaying:", isPlaying);
         if (mouseElement) {
-            if (totalSpectrum > prevSpec) {
+            if (prevSpec - totalSpectrum < -500) {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
-            } else if (prevSpec - totalSpectrum < 250) {
+            } else if (prevSpec - totalSpectrum < 0) {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
             } else if (prevSpec - totalSpectrum < 500) {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
             } else {
                 mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
+            // リップシンクが動作しない場合でも、一定の画像を表示する
+            // if (!isPlaying) {
+            //     mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            // }
         }
+        
         else{
             console.log("該当なし");
         }
@@ -88,24 +93,31 @@ function createAudioControl(text, styleId) {
 
     const statusIndicator = document.createElement('span');
     statusIndicator.classList.add('status-indicator');
-    statusIndicator.textContent = '再生可能';  // 初期状態を「再生可能」に変更
+    statusIndicator.textContent = '再生可能';
 
     playButton.addEventListener('click', async () => {
         if (isPlaying) {
-            audio.pause();
-            audio.currentTime = 0;
-            isPlaying = false;
-            playButton.innerHTML = '<i class="fas fa-play"></i>';
-            statusIndicator.textContent = '再生可能';
+            if (audioSrc) {
+                audioSrc.stop(); // 再生中の音声を停止
+                clearInterval(sampleInterval);
+                if (ctx) {
+                    ctx.close();
+                    ctx = null;
+                }
+                audioSrc = null;
+                prevSpec = 0;
+                isPlaying = false;
+                playButton.innerHTML = '<i class="fas fa-play"></i>';
+                statusIndicator.textContent = '再生可能';
+            }
             return;
         }
 
         try {
             console.log("Playing audio for styleId:", styleId);
-            currentStatusIndicator = statusIndicator; // 現在のステータスインジケータを保存
-            isPlaying = true;
+            currentStatusIndicator = statusIndicator;
+            statusIndicator.textContent = '再生中...';
             playButton.innerHTML = '<i class="fas fa-pause"></i>';
-            statusIndicator.textContent = '再生中...';  // ステータスを「再生中...」に更新
             await play(text, styleId);
         } catch (error) {
             console.error('Play method error:', error);
@@ -134,6 +146,7 @@ async function playVoice(voice_path, voicevox_id, message) {
     });
 
     try {
+        isPlaying = true; // 再生開始時にフラグを設定
         const {audioBuffer, ctx: newCtx} = await preparedBuffer(voice_path); // audioBuffer取得
         ctx = newCtx;
         const {audioSrc: newAudioSrc, analyser: newAnalyser} = buildNodes(audioBuffer, ctx); // 入力、解析ノード作成
@@ -147,7 +160,7 @@ async function playVoice(voice_path, voicevox_id, message) {
             analyser.getByteFrequencyData(spectrums);
             console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
             syncLip(spectrums, voicevox_id); //リップシンクを追加
-        }, 50);
+        }, 40);
 
         // 音声終了時のコールバック： リソースの開放、無効化していたボタンを有効化する
         audioSrc.onended = () => {
@@ -156,13 +169,13 @@ async function playVoice(voice_path, voicevox_id, message) {
             ctx.close();
             ctx = null;
             prevSpec = 0;
+            isPlaying = false; // 再生終了時にフラグをリセット
             buttons.forEach(button => {
                 button.disabled = false;
             });
             // 音声再生完了時にステータスを更新
             if (currentStatusIndicator) {
                 currentStatusIndicator.textContent = '再生可能';
-                isPlaying = false;
                 const playButton = currentStatusIndicator.previousElementSibling;
                 if (playButton) {
                     playButton.innerHTML = '<i class="fas fa-play"></i>';
@@ -171,12 +184,12 @@ async function playVoice(voice_path, voicevox_id, message) {
         };
     } catch (error) {
         console.error('Error in playVoice:', error);
+        isPlaying = false; // エラー時にフラグをリセット
         buttons.forEach(button => {
             button.disabled = false;
         });
         if (currentStatusIndicator) {
             currentStatusIndicator.textContent = '再生エラー';
-            isPlaying = false;
             const playButton = currentStatusIndicator.previousElementSibling;
             if (playButton) {
                 playButton.innerHTML = '<i class="fas fa-play"></i>';
