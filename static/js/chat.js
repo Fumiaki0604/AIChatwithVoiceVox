@@ -28,10 +28,11 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
     console.log("Current total spectrum:", totalSpectrum);
     console.log("Previous spectrum:", prevSpec);
     console.log("Difference:", prevSpec - totalSpectrum);
+    console.log("Current voicevox_id:", voicevox_id); // デバッグ用：現在のボイスタイプIDを確認
 
     // 四国めたん用のリップシンク（全ボイスタイプ対応）
     // ノーマル: 2, あまあま: 0, つんつん: 6, セクシー: 4, ささやき: 36, ヒソヒソ: 37
-    if ([0, 2, 4, 6, 36, 37].includes(voicevox_id)) {
+    if ([0, 2, 4, 6, 36, 37].includes(parseInt(voicevox_id))) {
         // 左側（話者A）の四国めたんの口のアニメーション
         const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
         if (leftMouseElement && currentSpeaker === 'A') {
