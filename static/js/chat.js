@@ -29,8 +29,9 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
     console.log("Previous spectrum:", prevSpec);
     console.log("Difference:", prevSpec - totalSpectrum);
 
-    // 四国めたん用のリップシンク
-    if (voicevox_id == 2) { // 四国めたん（ノーマル）: 2, ツンツン: 3, あまあま: 4, セクシー: 6
+    // 四国めたん用のリップシンク（全ボイスタイプ対応）
+    // ノーマル: 2, あまあま: 0, つんつん: 6, セクシー: 4, ささやき: 36, ヒソヒソ: 37
+    if ([0, 2, 4, 6, 36, 37].includes(voicevox_id)) {
         // 左側（話者A）の四国めたんの口のアニメーション
         const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
         if (leftMouseElement && currentSpeaker === 'A') {
@@ -62,7 +63,6 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
 
     prevSpec = totalSpectrum;
 }
-
 
 /* 音声再生処理 */
 async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
