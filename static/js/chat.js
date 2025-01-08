@@ -21,7 +21,7 @@ function buildNodes(audioBuffer, ctx) {
 }
 
 /* スペクトルをもとにリップシンクを行う */
-function syncLip(spectrums, voicevox_id) {
+function syncLip(spectrums, voicevox_id, currentSpeaker) {
     const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2); // 音声の主要周波数帯を取得 
     const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0); // 周波数帯内の全スペクトラムの合計を算出
 
@@ -33,7 +33,7 @@ function syncLip(spectrums, voicevox_id) {
     if (voicevox_id == 2) { // 四国めたん（ノーマル）: 2, ツンツン: 3, あまあま: 4, セクシー: 6
         // 左側（話者A）の四国めたんの口のアニメーション
         const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
-        if (leftMouseElement) {
+        if (leftMouseElement && currentSpeaker === 'A') {
             if (totalSpectrum > prevSpec) {
                 leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
             } else if (prevSpec - totalSpectrum < 250) {
@@ -47,7 +47,7 @@ function syncLip(spectrums, voicevox_id) {
 
         // 右側（話者B）の四国めたんの口のアニメーション
         const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
-        if (rightMouseElement) {
+        if (rightMouseElement && currentSpeaker === 'B') {
             if (totalSpectrum > prevSpec) {
                 rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
             } else if (prevSpec - totalSpectrum < 250) {
@@ -64,81 +64,13 @@ function syncLip(spectrums, voicevox_id) {
 }
 
 
-// グローバル変数の定義
-let chatMessages;
-let speakerASelect;
-let speakerBSelect;
-let styleASelect;
-let styleBSelect;
-let speakers = [];
-let TTS_QUEST_API_KEY = '';
-let currentTheme = localStorage.getItem('theme') || 'light';
-let audio = null;
-let isPlaying = false;
-let currentStatusIndicator = null;
-let ctx = null; // AudioContext: Nodeの作成、音声のデコードの制御などを行う
-let audioSrc = null; // AudioBufferSourceNode: 音声入力ノード
-let analyser = null; // AnalyserNode: 音声解析ノード
-let sampleInterval = null;
-let prevSpec = 0; // 前回のサンプリングで取得したスペクトルの合計値
-
-
-function getCurrentTime() {
-    const now = new Date();
-    return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-}
-
-// createAudioControl関数の修正部分
-function createAudioControl(text, styleId) {
-    const audioControl = document.createElement('div');
-    audioControl.classList.add('audio-control');
-
-    const playButton = document.createElement('button');
-    playButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
-    playButton.disabled = !TTS_QUEST_API_KEY;
-
-    const statusIndicator = document.createElement('span');
-    statusIndicator.classList.add('status-indicator');
-    statusIndicator.textContent = '再生可能';  // 初期状態を「再生可能」に変更
-
-    playButton.addEventListener('click', async () => {
-        if (isPlaying) {
-            console.log("検証用");
-            audio.pause();
-            audio.currentTime = 0;
-            isPlaying = false;
-            playButton.innerHTML = '<i class="fas fa-play"></i>';
-            statusIndicator.textContent = '再生可能';
-            return;
-        }
-
-        try {
-            console.log("Playing audio for styleId:", styleId);
-            currentStatusIndicator = statusIndicator; // 現在のステータスインジケータを保存
-            isPlaying = true;
-            playButton.innerHTML = '<i class="fas fa-pause"></i>';
-            statusIndicator.textContent = '再生中...';  // ステータスを「再生中...」に更新
-            await play(text, styleId);
-        } catch (error) {
-            console.error('Play method error:', error);
-            statusIndicator.textContent = '再生エラー';
-            isPlaying = false;
-            playButton.innerHTML = '<i class="fas fa-play"></i>';
-            playButton.disabled = true;
-        }
-    });
-
-    audioControl.appendChild(playButton);
-    audioControl.appendChild(statusIndicator);
-    return audioControl;
-}
-
 /* 音声再生処理 */
-async function playVoice(voice_path, voicevox_id, message) {
+async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
     console.log("Starting playVoice with:", {
         voice_path,
         voicevox_id,
-        message
+        message,
+        currentSpeaker
     });
 
     // 音声再生中はボタンを無効化し、2重で再生できないようにする
@@ -170,7 +102,7 @@ async function playVoice(voice_path, voicevox_id, message) {
             let spectrums = new Uint8Array(analyser.fftSize);
             analyser.getByteFrequencyData(spectrums);
             console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
-            syncLip(spectrums, voicevox_id);
+            syncLip(spectrums, voicevox_id, currentSpeaker);
         }, 40);
 
         // 音声終了時のコールバック
@@ -195,6 +127,16 @@ async function playVoice(voice_path, voicevox_id, message) {
                 if (playButton) {
                     playButton.innerHTML = '<i class="fas fa-play"></i>';
                 }
+            }
+
+            // 口を閉じた状態に戻す
+            const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+            const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
+            if (leftMouseElement && currentSpeaker === 'A') {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            }
+            if (rightMouseElement && currentSpeaker === 'B') {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
         };
     } catch (error) {
@@ -227,7 +169,95 @@ async function playVoice(voice_path, voicevox_id, message) {
     }
 }
 
-// メッセージ表示関数をグローバルスコープに移動
+// createAudioControl関数の修正部分
+function createAudioControl(text, styleId, currentSpeaker) {
+    const audioControl = document.createElement('div');
+    audioControl.classList.add('audio-control');
+
+    const playButton = document.createElement('button');
+    playButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+    playButton.disabled = !TTS_QUEST_API_KEY;
+
+    const statusIndicator = document.createElement('span');
+    statusIndicator.classList.add('status-indicator');
+    statusIndicator.textContent = '再生可能';
+
+    playButton.addEventListener('click', async () => {
+        if (isPlaying) {
+            console.log("検証用");
+            audio.pause();
+            audio.currentTime = 0;
+            isPlaying = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+            statusIndicator.textContent = '再生可能';
+            return;
+        }
+
+        try {
+            console.log("Playing audio for styleId:", styleId);
+            currentStatusIndicator = statusIndicator;
+            isPlaying = true;
+            playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            statusIndicator.textContent = '再生中...';
+            await play(text, styleId, currentSpeaker);
+        } catch (error) {
+            console.error('Play method error:', error);
+            statusIndicator.textContent = '再生エラー';
+            isPlaying = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+            playButton.disabled = true;
+        }
+    });
+
+    audioControl.appendChild(playButton);
+    audioControl.appendChild(statusIndicator);
+    return audioControl;
+}
+
+async function play(text, styleId, currentSpeaker) {
+    console.log("Starting play function with:", {text, styleId, currentSpeaker});
+    var ttsQuestApiKey = 'p-s205e-L706841';
+    var audio = new TtsQuestV3Voicevox(styleId, text, ttsQuestApiKey);
+
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new Error('音声生成がタイムアウトしました'));
+        }, 30000);
+
+        audio.addEventListener('tts-ready', async () => {
+            clearTimeout(timeout);
+            try {
+                const mp3Url = await audio.play();
+                console.log("Received MP3 URL:", mp3Url);
+                if (mp3Url) {
+                    await playVoice(mp3Url, styleId, text, currentSpeaker);
+                    resolve();
+                } else {
+                    throw new Error('音声URLの取得に失敗しました');
+                }
+            } catch (error) {
+                console.error("Error playing audio:", error);
+                if (currentStatusIndicator) {
+                    currentStatusIndicator.textContent = '再生エラー';
+                }
+                isPlaying = false;
+                reject(error);
+            }
+        });
+
+        audio.addEventListener('tts-error', (event) => {
+            clearTimeout(timeout);
+            console.error("TTS Error:", event.detail);
+            if (currentStatusIndicator) {
+                currentStatusIndicator.textContent = '再生エラー';
+            }
+            isPlaying = false;
+            reject(new Error(event.detail));
+        });
+    });
+}
+
+// メッセージ表示関数の修正
 function addMessage(text, type) {
     if (!chatMessages) {
         chatMessages = document.getElementById('chat-messages');
@@ -291,7 +321,8 @@ function addMessage(text, type) {
 
     if (type !== 'user' && TTS_QUEST_API_KEY) {
         const styleId = type === 'ai-message-a' ? styleASelect.value : styleBSelect.value;
-        const audioControl = createAudioControl(text, styleId);
+        const currentSpeaker = type === 'ai-message-a' ? 'A' : 'B';
+        const audioControl = createAudioControl(text, styleId, currentSpeaker);
         messageDiv.appendChild(audioControl);
     }
 
@@ -300,7 +331,31 @@ function addMessage(text, type) {
     return messageDiv;
 }
 
-// グローバルスコープにshowUserMessage関数を定義
+// グローバル変数の定義
+let chatMessages;
+let speakerASelect;
+let speakerBSelect;
+let styleASelect;
+let styleBSelect;
+let speakers = [];
+let TTS_QUEST_API_KEY = '';
+let currentTheme = localStorage.getItem('theme') || 'light';
+let audio = null;
+let isPlaying = false;
+let currentStatusIndicator = null;
+let ctx = null; // AudioContext: Nodeの作成、音声のデコードの制御などを行う
+let audioSrc = null; // AudioBufferSourceNode: 音声入力ノード
+let analyser = null; // AnalyserNode: 音声解析ノード
+let sampleInterval = null;
+let prevSpec = 0; // 前回のサンプリングで取得したスペクトルの合計値
+
+
+function getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+}
+
+
 function showUserMessage(message) {
     console.log("User Message:", message);
     addMessage(message, 'user');
@@ -407,50 +462,6 @@ class TtsQuestV3Voicevox extends Audio {
         });
     }
 }
-
-async function play(text, styleId) {
-    console.log("Starting play function with:", {text, styleId});
-    var ttsQuestApiKey = 'p-s205e-L706841'; // optional
-    var audio = new TtsQuestV3Voicevox(styleId, text, ttsQuestApiKey);
-
-    return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            reject(new Error('音声生成がタイムアウトしました'));
-        }, 30000); // 30秒タイムアウト
-
-        audio.addEventListener('tts-ready', async () => {
-            clearTimeout(timeout);
-            try {
-                const mp3Url = await audio.play();
-                console.log("Received MP3 URL:", mp3Url);
-                if (mp3Url) {
-                    await playVoice(mp3Url, styleId, text);
-                    resolve();
-                } else {
-                    throw new Error('音声URLの取得に失敗しました');
-                }
-            } catch (error) {
-                console.error("Error playing audio:", error);
-                if (currentStatusIndicator) {
-                    currentStatusIndicator.textContent = '再生エラー';
-                }
-                isPlaying = false;
-                reject(error);
-            }
-        });
-
-        audio.addEventListener('tts-error', (event) => {
-            clearTimeout(timeout);
-            console.error("TTS Error:", event.detail);
-            if (currentStatusIndicator) {
-                currentStatusIndicator.textContent = '再生エラー';
-            }
-            isPlaying = false;
-            reject(new Error(event.detail));
-        });
-    });
-}
-
 
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -656,14 +667,14 @@ document.addEventListener('DOMContentLoaded', async function () {
                 // 話者Aのメッセージを追加して再生
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
                 if (speakerAMessage) {
-                    await play(data.speaker_a, styleASelect.value);
+                    await play(data.speaker_a, styleASelect.value, 'A');
                 }
 
                 // 話者Bのメッセージを追加して再生（話者Aの再生後に遅延して実行）
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
                 if (speakerBMessage) {
                     setTimeout(async () => {
-                        await play(data.speaker_b, styleBSelect.value);
+                        await play(data.speaker_b, styleBSelect.value, 'B');
                     }, data.speaker_a.length * 180);
                 }
             } else {
