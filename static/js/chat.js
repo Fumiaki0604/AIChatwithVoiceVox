@@ -701,12 +701,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
 
-
     async function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
 
-        addMessage(message, 'user');
+        showUserMessage(message);
         userInput.value = '';
 
         try {
@@ -737,16 +736,30 @@ document.addEventListener('DOMContentLoaded', async function () {
                 addMessage('エラーが発生しました: ' + data.error, 'error');
             }
         } catch (error) {
+            console.error('Error sending message:', error);
             addMessage('通信エラーが発生しました', 'error');
         }
     }
 
-    sendButton.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
-    });
+    // イベントリスナーの設定
+    if (sendButton) {
+        console.log('Send button found, adding click listener');
+        sendButton.addEventListener('click', sendMessage);
+    } else {
+        console.error('Send button not found');
+    }
+
+    if (userInput) {
+        console.log('User input found, adding keypress listener');
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    } else {
+        console.error('User input not found');
+    }
 
     function setupBlinking(characterElement) {
         console.log("setupBlinking called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
