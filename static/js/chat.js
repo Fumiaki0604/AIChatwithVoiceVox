@@ -31,20 +31,32 @@ function syncLip(spectrums, voicevox_id) {
 
     // 四国めたん用のリップシンク
     if (voicevox_id == 2) { // 四国めたん（ノーマル）: 2, ツンツン: 3, あまあま: 4, セクシー: 6
-        const mouseElement = document.querySelector('.standing-character.right .character-mouth');
-        console.log("isPlaying:", isPlaying);
-        if (mouseElement) {
+        // 左側（話者A）の四国めたんの口のアニメーション
+        const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+        if (leftMouseElement) {
             if (totalSpectrum > prevSpec) {
-                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
             } else if (prevSpec - totalSpectrum < 250) {
-                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
             } else if (prevSpec - totalSpectrum < 500) {
-                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
             } else {
-                mouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
-        } else {
-            console.log("該当なし");
+        }
+
+        // 右側（話者B）の四国めたんの口のアニメーション
+        const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
+        if (rightMouseElement) {
+            if (totalSpectrum > prevSpec) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+            } else {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            }
         }
     }
 
@@ -480,8 +492,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating left character (Speaker A):", speakerA?.name);
         if (speakerA && speakerA.name === '四国めたん') {
             leftCharacter.innerHTML = `
-                <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
-                <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                <div class="character-container">
+                    <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                    <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                    <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
+                </div>
             `;
             // DOMの更新が完了するのを待ってから初期化
             Promise.resolve().then(() => {
