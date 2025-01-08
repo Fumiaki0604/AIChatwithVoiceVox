@@ -21,7 +21,7 @@ function buildNodes(audioBuffer, ctx) {
 }
 
 /* スペクトルをもとにリップシンクを行う */
-function syncLip(spectrums, voicevox_id, currentSpeaker) {
+function syncLip(spectrums, voicevox_id) {
     const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2); // 音声の主要周波数帯を取得 
     const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0); // 周波数帯内の全スペクトラムの合計を算出
 
@@ -34,18 +34,13 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
         // 左側（話者A）の四国めたんの口のアニメーション
         const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
         if (leftMouseElement) {
-            if (currentSpeaker === 'speaker-a') {
-                if (totalSpectrum > prevSpec) {
-                    leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
-                } else if (prevSpec - totalSpectrum < 250) {
-                    leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
-                } else if (prevSpec - totalSpectrum < 500) {
-                    leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
-                } else {
-                    leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
-                }
+            if (totalSpectrum > prevSpec) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
             } else {
-                // 非発話時は口を閉じた状態
                 leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
         }
@@ -53,18 +48,13 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
         // 右側（話者B）の四国めたんの口のアニメーション
         const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
         if (rightMouseElement) {
-            if (currentSpeaker === 'speaker-b') {
-                if (totalSpectrum > prevSpec) {
-                    rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
-                } else if (prevSpec - totalSpectrum < 250) {
-                    rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
-                } else if (prevSpec - totalSpectrum < 500) {
-                    rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
-                } else {
-                    rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
-                }
+            if (totalSpectrum > prevSpec) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
             } else {
-                // 非発話時は口を閉じた状態
                 rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
         }
@@ -91,17 +81,64 @@ let audioSrc = null; // AudioBufferSourceNode: 音声入力ノード
 let analyser = null; // AnalyserNode: 音声解析ノード
 let sampleInterval = null;
 let prevSpec = 0; // 前回のサンプリングで取得したスペクトルの合計値
-let currentSpeaker = null; // 現在発話中の話者を保持する変数
 
-// ... その他のコード ...
+
+function getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+}
+
+// createAudioControl関数の修正部分
+function createAudioControl(text, styleId) {
+    const audioControl = document.createElement('div');
+    audioControl.classList.add('audio-control');
+
+    const playButton = document.createElement('button');
+    playButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+    playButton.disabled = !TTS_QUEST_API_KEY;
+
+    const statusIndicator = document.createElement('span');
+    statusIndicator.classList.add('status-indicator');
+    statusIndicator.textContent = '再生可能';  // 初期状態を「再生可能」に変更
+
+    playButton.addEventListener('click', async () => {
+        if (isPlaying) {
+            console.log("検証用");
+            audio.pause();
+            audio.currentTime = 0;
+            isPlaying = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+            statusIndicator.textContent = '再生可能';
+            return;
+        }
+
+        try {
+            console.log("Playing audio for styleId:", styleId);
+            currentStatusIndicator = statusIndicator; // 現在のステータスインジケータを保存
+            isPlaying = true;
+            playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            statusIndicator.textContent = '再生中...';  // ステータスを「再生中...」に更新
+            await play(text, styleId);
+        } catch (error) {
+            console.error('Play method error:', error);
+            statusIndicator.textContent = '再生エラー';
+            isPlaying = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
+            playButton.disabled = true;
+        }
+    });
+
+    audioControl.appendChild(playButton);
+    audioControl.appendChild(statusIndicator);
+    return audioControl;
+}
 
 /* 音声再生処理 */
-async function playVoice(voice_path, voicevox_id, message, speaker) {
+async function playVoice(voice_path, voicevox_id, message) {
     console.log("Starting playVoice with:", {
         voice_path,
         voicevox_id,
-        message,
-        speaker
+        message
     });
 
     // 音声再生中はボタンを無効化し、2重で再生できないようにする
@@ -121,12 +158,11 @@ async function playVoice(voice_path, voicevox_id, message, speaker) {
 
         // 音声再生開始前に状態を更新
         isPlaying = true;
-        currentSpeaker = speaker; // 現在の発話者を設定
         if (currentStatusIndicator) {
             currentStatusIndicator.textContent = '再生中...';
         }
 
-        console.log("Starting audio playback for speaker:", speaker);
+        console.log("Starting audio playback");
         audioSrc.start();
 
         // 40ms毎に音声のサンプリング→解析→リップシンクを行う
@@ -134,7 +170,7 @@ async function playVoice(voice_path, voicevox_id, message, speaker) {
             let spectrums = new Uint8Array(analyser.fftSize);
             analyser.getByteFrequencyData(spectrums);
             console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
-            syncLip(spectrums, voicevox_id, speaker);
+            syncLip(spectrums, voicevox_id);
         }, 40);
 
         // 音声終了時のコールバック
@@ -146,7 +182,6 @@ async function playVoice(voice_path, voicevox_id, message, speaker) {
             ctx = null;
             prevSpec = 0;
             isPlaying = false;
-            currentSpeaker = null; // 発話者をリセット
 
             // ボタンを再度有効化
             buttons.forEach(button => {
@@ -175,7 +210,6 @@ async function playVoice(voice_path, voicevox_id, message, speaker) {
         }
         prevSpec = 0;
         isPlaying = false;
-        currentSpeaker = null; // エラー時も発話者をリセット
 
         buttons.forEach(button => {
             button.disabled = false;
@@ -193,107 +227,7 @@ async function playVoice(voice_path, voicevox_id, message, speaker) {
     }
 }
 
-// createAudioControl関数の修正
-function createAudioControl(text, styleId, speaker) {
-    const audioControl = document.createElement('div');
-    audioControl.classList.add('audio-control');
-
-    const playButton = document.createElement('button');
-    playButton.innerHTML = '<i class="fas fa-play"></i>';
-    playButton.disabled = !TTS_QUEST_API_KEY;
-
-    const statusIndicator = document.createElement('span');
-    statusIndicator.classList.add('status-indicator');
-    statusIndicator.textContent = '再生可能';
-
-    playButton.addEventListener('click', async () => {
-        if (isPlaying) {
-            console.log("検証用");
-            if (audioSrc) {
-                audioSrc.stop();
-                audioSrc = null;
-            }
-            if (ctx) {
-                ctx.close();
-                ctx = null;
-            }
-            clearInterval(sampleInterval);
-            isPlaying = false;
-            currentSpeaker = null; // 停止時に発話者をリセット
-            playButton.innerHTML = '<i class="fas fa-play"></i>';
-            statusIndicator.textContent = '再生可能';
-            return;
-        }
-
-        try {
-            console.log("Playing audio for styleId:", styleId, "speaker:", speaker);
-            currentStatusIndicator = statusIndicator;
-            isPlaying = true;
-            playButton.innerHTML = '<i class="fas fa-pause"></i>';
-            statusIndicator.textContent = '再生中...';
-            await play(text, styleId, speaker);
-        } catch (error) {
-            console.error('Play method error:', error);
-            statusIndicator.textContent = '再生エラー';
-            isPlaying = false;
-            currentSpeaker = null;
-            playButton.innerHTML = '<i class="fas fa-play"></i>';
-            playButton.disabled = true;
-        }
-    });
-
-    audioControl.appendChild(playButton);
-    audioControl.appendChild(statusIndicator);
-    return audioControl;
-}
-
-// play関数の修正
-async function play(text, styleId, speaker) {
-    console.log("Starting play function with:", {text, styleId, speaker});
-    var ttsQuestApiKey = 'p-s205e-L706841';
-    var audio = new TtsQuestV3Voicevox(styleId, text, ttsQuestApiKey);
-
-    return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            reject(new Error('音声生成がタイムアウトしました'));
-        }, 30000);
-
-        audio.addEventListener('tts-ready', async () => {
-            clearTimeout(timeout);
-            try {
-                const mp3Url = await audio.play();
-                console.log("Received MP3 URL:", mp3Url);
-                if (mp3Url) {
-                    await playVoice(mp3Url, styleId, text, speaker);
-                    resolve();
-                } else {
-                    throw new Error('音声URLの取得に失敗しました');
-                }
-            } catch (error) {
-                console.error("Error playing audio:", error);
-                if (currentStatusIndicator) {
-                    currentStatusIndicator.textContent = '再生エラー';
-                }
-                isPlaying = false;
-                currentSpeaker = null;
-                reject(error);
-            }
-        });
-
-        audio.addEventListener('tts-error', (event) => {
-            clearTimeout(timeout);
-            console.error("TTS Error:", event.detail);
-            if (currentStatusIndicator) {
-                currentStatusIndicator.textContent = '再生エラー';
-            }
-            isPlaying = false;
-            currentSpeaker = null;
-            reject(new Error(event.detail));
-        });
-    });
-}
-
-// メッセージ表示関数の修正
+// メッセージ表示関数をグローバルスコープに移動
 function addMessage(text, type) {
     if (!chatMessages) {
         chatMessages = document.getElementById('chat-messages');
@@ -357,8 +291,7 @@ function addMessage(text, type) {
 
     if (type !== 'user' && TTS_QUEST_API_KEY) {
         const styleId = type === 'ai-message-a' ? styleASelect.value : styleBSelect.value;
-        const speaker = type === 'ai-message-a' ? 'speaker-a' : 'speaker-b';
-        const audioControl = createAudioControl(text, styleId, speaker);
+        const audioControl = createAudioControl(text, styleId);
         messageDiv.appendChild(audioControl);
     }
 
@@ -475,8 +408,8 @@ class TtsQuestV3Voicevox extends Audio {
     }
 }
 
-async function play(text, styleId, speaker) {
-    console.log("Starting play function with:", {text, styleId, speaker});
+async function play(text, styleId) {
+    console.log("Starting play function with:", {text, styleId});
     var ttsQuestApiKey = 'p-s205e-L706841'; // optional
     var audio = new TtsQuestV3Voicevox(styleId, text, ttsQuestApiKey);
 
@@ -491,7 +424,7 @@ async function play(text, styleId, speaker) {
                 const mp3Url = await audio.play();
                 console.log("Received MP3 URL:", mp3Url);
                 if (mp3Url) {
-                    await playVoice(mp3Url, styleId, text, speaker);
+                    await playVoice(mp3Url, styleId, text);
                     resolve();
                 } else {
                     throw new Error('音声URLの取得に失敗しました');
@@ -701,11 +634,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
 
+
     async function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
 
-        showUserMessage(message);
+        addMessage(message, 'user');
         userInput.value = '';
 
         try {
@@ -722,44 +656,30 @@ document.addEventListener('DOMContentLoaded', async function () {
                 // 話者Aのメッセージを追加して再生
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
                 if (speakerAMessage) {
-                    await play(data.speaker_a, styleASelect.value, 'speaker-a');
+                    await play(data.speaker_a, styleASelect.value);
                 }
 
                 // 話者Bのメッセージを追加して再生（話者Aの再生後に遅延して実行）
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
                 if (speakerBMessage) {
                     setTimeout(async () => {
-                        await play(data.speaker_b, styleBSelect.value, 'speaker-b');
+                        await play(data.speaker_b, styleBSelect.value);
                     }, data.speaker_a.length * 180);
                 }
             } else {
                 addMessage('エラーが発生しました: ' + data.error, 'error');
             }
         } catch (error) {
-            console.error('Error sending message:', error);
             addMessage('通信エラーが発生しました', 'error');
         }
     }
 
-    // イベントリスナーの設定
-    if (sendButton) {
-        console.log('Send button found, adding click listener');
-        sendButton.addEventListener('click', sendMessage);
-    } else {
-        console.error('Send button not found');
-    }
-
-    if (userInput) {
-        console.log('User input found, adding keypress listener');
-        userInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-    } else {
-        console.error('User input not found');
-    }
+    sendButton.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
 
     function setupBlinking(characterElement) {
         console.log("setupBlinking called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
