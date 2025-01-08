@@ -306,7 +306,8 @@ body {
 }
 
 .standing-character.left .standing-character-base,
-.standing-character.left .standing-character-eyes {
+.standing-character.left .standing-character-eyes,
+.standing-character.left .character-mouth {
     transform: scaleX(-1);
 }
 
