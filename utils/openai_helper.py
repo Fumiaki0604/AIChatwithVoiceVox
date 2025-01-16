@@ -43,10 +43,11 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         assistant_response = response.choices[0].message.content
 
         # 新しい会話履歴を返す（システムメッセージは除外）
-        updated_history = conversation_history + [
+        updated_history = [msg for msg in conversation_history]  # 既存の履歴をコピー
+        updated_history.extend([
             {"role": "user", "content": message},
             {"role": "assistant", "content": assistant_response}
-        ]
+        ])
 
         return assistant_response, updated_history
     except Exception as e:
