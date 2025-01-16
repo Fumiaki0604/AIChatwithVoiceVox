@@ -798,4 +798,28 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
         });
     }
+
+    // Add reset conversation button handler
+    const resetButton = document.getElementById('reset-conversation');
+    resetButton.addEventListener('click', async () => {
+        try {
+            const response = await fetch('/reset-conversation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                // Clear chat messages from the UI
+                chatMessages.innerHTML = '';
+                addMessage('会話履歴をリセットしました', 'system');
+            } else {
+                const data = await response.json();
+                addMessage('エラーが発生しました: ' + data.error, 'error');
+            }
+        } catch (error) {
+            addMessage('通信エラーが発生しました', 'error');
+        }
+    });
 });
