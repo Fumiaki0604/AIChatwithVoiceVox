@@ -10,6 +10,9 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         if conversation_history is None:
             conversation_history = []
 
+        # valid_historyの初期化
+        valid_history = []
+
         # システムメッセージの設定
         if response_type == "main_response":
             system_message = "You are a helpful assistant. Provide clear and concise responses."
@@ -21,7 +24,6 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
 
         # 会話履歴の追加（型チェック付き）
         if conversation_history and isinstance(conversation_history, list):
-            valid_history = []
             for msg in conversation_history:
                 if isinstance(msg, dict) and 'role' in msg and 'content' in msg:
                     if isinstance(msg['role'], str) and isinstance(msg['content'], str):
