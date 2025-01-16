@@ -16,14 +16,22 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         else:
             system_message = "You are reacting to another AI's response. Provide a brief, natural reaction to what was said."
 
-        # メッセージ履歴の作成
-        messages = [{"role": "system", "content": system_message}]
+        # メッセージ履歴の作成（システムメッセージを含む）
+        messages = [
+            {"role": "system", "content": system_message}
+        ]
 
-        # 過去の会話履歴を追加
-        messages.extend(conversation_history)
+        # 過去の会話履歴を追加（履歴が正しい形式であることを確認）
+        if isinstance(conversation_history, list):
+            for msg in conversation_history:
+                if isinstance(msg, dict) and 'role' in msg and 'content' in msg:
+                    messages.append(msg)
 
         # 新しいユーザーメッセージを追加
         messages.append({"role": "user", "content": message})
+
+        # デバッグ用：メッセージの構造を確認
+        print("Sending messages to OpenAI:", messages)
 
         response = openai.chat.completions.create(
             model="gpt-4",  # 最新の安定版モデルを使用
