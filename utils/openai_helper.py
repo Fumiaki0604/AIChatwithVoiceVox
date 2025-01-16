@@ -17,7 +17,10 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         if response_type == "main_response":
             system_message = "You are a helpful assistant. Provide clear and concise responses."
         else:
-            system_message = "You are reacting to another AI's response. Provide a brief, natural reaction to what was said."
+            system_message = """You are an AI assistant who listens to conversations between a user and another AI assistant. 
+            Your role is to provide meaningful responses that show understanding of the conversation context.
+            Instead of repeating what was said, offer your own perspective or add value to the discussion.
+            Keep your responses natural and contextually relevant."""
 
         # メッセージ配列の作成
         messages = [{"role": "system", "content": system_message}]
@@ -36,7 +39,8 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         # 新しいユーザーメッセージを追加
         messages.append({
             "role": "user",
-            "content": str(message)  # 文字列型に変換
+            "content": str(message) if response_type == "main_response" else 
+                      f"Please respond to this conversation:\n{str(message)}"
         })
 
         # デバッグ用：送信するメッセージの構造を出力
