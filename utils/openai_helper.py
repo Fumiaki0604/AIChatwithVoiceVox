@@ -6,7 +6,7 @@ openai = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_chat_response(message, conversation_history=None, response_type="main_response"):
     try:
-        # 会話履歴がNoneの場合は空のリストを作成
+        # 会話履歴の初期化
         if conversation_history is None:
             conversation_history = []
 
@@ -16,23 +16,31 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         else:
             system_message = "You are reacting to another AI's response. Provide a brief, natural reaction to what was said."
 
-        # メッセージ履歴の作成（システムメッセージを含む）
-        messages = [
-            {"role": "system", "content": system_message}
-        ]
+        # メッセージ配列の作成
+        messages = [{"role": "system", "content": system_message}]
 
-        # 過去の会話履歴を追加（履歴が正しい形式であることを確認）
-        if isinstance(conversation_history, list):
+        # 会話履歴の追加（型チェック付き）
+        if conversation_history and isinstance(conversation_history, list):
+            valid_history = []
             for msg in conversation_history:
                 if isinstance(msg, dict) and 'role' in msg and 'content' in msg:
-                    messages.append(msg)
+                    if isinstance(msg['role'], str) and isinstance(msg['content'], str):
+                        valid_history.append({
+                            "role": msg['role'],
+                            "content": msg['content']
+                        })
+            messages.extend(valid_history)
 
         # 新しいユーザーメッセージを追加
-        messages.append({"role": "user", "content": message})
+        messages.append({
+            "role": "user",
+            "content": str(message)  # 文字列型に変換
+        })
 
-        # デバッグ用：メッセージの構造を確認
+        # デバッグ用：送信するメッセージの構造を出力
         print("Sending messages to OpenAI:", messages)
 
+        # OpenAI APIを呼び出し
         response = openai.chat.completions.create(
             model="gpt-4",  # 最新の安定版モデルを使用
             messages=messages,
@@ -42,14 +50,18 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         # アシスタントの応答を取得
         assistant_response = response.choices[0].message.content
 
-        # 新しい会話履歴を返す（システムメッセージは除外）
-        updated_history = [msg for msg in conversation_history]  # 既存の履歴をコピー
-        updated_history.extend([
-            {"role": "user", "content": message},
+        # 新しい会話履歴を作成（システムメッセージは除外）
+        new_history = []
+        for msg in valid_history:
+            new_history.append(msg.copy())  # 既存の履歴をコピー
+
+        # 新しいメッセージを履歴に追加
+        new_history.extend([
+            {"role": "user", "content": str(message)},
             {"role": "assistant", "content": assistant_response}
         ])
 
-        return assistant_response, updated_history
+        return assistant_response, new_history
     except Exception as e:
         print(f"OpenAI APIエラー: {str(e)}")  # エラーログを追加
         raise Exception(f"Failed to get ChatGPT response: {str(e)}")
