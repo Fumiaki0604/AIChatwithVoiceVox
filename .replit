@@ -17,10 +17,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Flask Server"
+args = "Flask Web Server"
 
 [[workflows.workflow]]
-name = "Flask Server"
+name = "Flask Web Server"
 author = "agent"
 
 [workflows.workflow.metadata]
