@@ -11,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "a-very-secret-key")
+app.config['DEBUG'] = True
+
+# Force the port to 8080
+port = int(os.environ.get('PORT', 8080))
+host = '0.0.0.0'
 
 # Load VOICEVOX speaker data
 try:
@@ -20,6 +25,11 @@ try:
 except Exception as e:
     logger.error(f"Error loading VOICEVOX speaker data: {e}")
     VOICEVOX_SPEAKERS = []
+
+# Basic route for health check
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "healthy"}), 200
 
 @app.route('/')
 def index():
@@ -104,9 +114,4 @@ def reset_conversation():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    try:
-        logger.info("Starting Flask application...")
-        app.run(host='0.0.0.0', port=8080, debug=True)
-    except Exception as e:
-        logger.error(f"Failed to start Flask application: {e}")
-        raise
+    app.run(debug=True, host=host, port=port)
