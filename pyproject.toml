@@ -10,4 +10,5 @@ dependencies = [
     "openai>=1.58.1",
     "psycopg2-binary>=2.9.10",
     "pytz>=2024.2",
+    "jpholiday>=0.1.10",
 ]
