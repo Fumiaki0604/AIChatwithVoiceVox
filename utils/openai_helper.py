@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 from datetime import datetime
 import locale
+import pytz
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 openai = OpenAI(api_key=OPENAI_API_KEY)
@@ -19,7 +20,10 @@ except locale.Error:
 
 def get_current_datetime_str():
     """現在の日時を日本語フォーマットで返す"""
-    now = datetime.now()
+    # 日本のタイムゾーンを取得
+    jst = pytz.timezone('Asia/Tokyo')
+    # 現在時刻を日本時間に変換
+    now = datetime.now(jst)
     try:
         # 日本語の曜日表示を試みる
         current_date = now.strftime('%Y年%m月%d日(%a)')
