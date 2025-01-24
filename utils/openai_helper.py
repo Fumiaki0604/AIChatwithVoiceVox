@@ -1,37 +1,40 @@
 import os
+import logging
 from openai import OpenAI
 from datetime import datetime
 import locale
 
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai = OpenAI(api_key=OPENAI_API_KEY)
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # 日本語の曜日表示のために日本のロケールを設定
 try:
     locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
 except locale.Error:
     try:
-        # フォールバック: C.UTF-8を試す
         locale.setlocale(locale.LC_TIME, 'C.UTF-8')
     except locale.Error:
-        # 最終フォールバック: システムのデフォルトロケール
         locale.setlocale(locale.LC_TIME, '')
 
 def get_current_datetime_str():
     """現在の日時を日本語フォーマットで返す"""
     now = datetime.now()
     try:
-        # 日本語の曜日表示を試みる
         current_date = now.strftime('%Y年%m月%d日(%a)')
     except:
-        # フォールバック: 英語の曜日表示
-        current_date = now.strftime('%Y年%m月%d日(%a)')
+        current_date = now.strftime('%Y年%m月%d日')
     current_time = now.strftime('%H:%M')
     return current_date, current_time
 
 def get_chat_response(message, conversation_history=None, response_type="main_response"):
+    """OpenAI APIを使用してチャットレスポンスを取得する"""
     try:
-        # Initialize conversation history if None
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise ValueError("OpenAI API key is required")
+
+        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
         if conversation_history is None:
             conversation_history = []
 
@@ -41,7 +44,8 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         # Prepare system message based on response type
         if response_type == "main_response":
             system_message = f"""あなたは会話をサポートするアシスタントです。現在は{current_date} {current_time}です。
-この時間情報は記憶していますが、会話の文脈で必要な場合にのみ使用してください。
+会話の文脈で必要な場合にのみ、時間情報を使用してください。
+
 例えば、以下のような場合に時間情報を活用します：
 - ユーザーが今日の予定や時間に関連する話題を出した場合
 - 季節や曜日に関連する自然な会話の流れがある場合
@@ -50,27 +54,25 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
 会話の文脈に合わせて、自然な応答を心がけてください。"""
         else:
             system_message = f"""あなたは他のAIの発言に反応する立場です。現在は{current_date} {current_time}です。
-この時間情報は記憶していますが、会話の文脈で必要な場合にのみ使用してください。
+会話の文脈で必要な場合にのみ、時間情報を使用してください。
 相手の発言に対して自然な反応を返しながら、会話の文脈を維持してください。"""
 
-        # Construct messages array with system message and conversation history
+        # Construct messages array
         messages = [{"role": "system", "content": system_message}]
-
-        # Add conversation history
         messages.extend(conversation_history)
-
-        # Add current message
         messages.append({"role": "user", "content": message})
 
-        response = openai.chat.completions.create(
+        logger.debug(f"Sending request to OpenAI API with message: {message}")
+
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=messages,
             max_tokens=500
         )
 
         response_content = response.choices[0].message.content
+        logger.debug(f"Received response from OpenAI API: {response_content}")
 
-        # Return both the response content and the updated conversation history
         return {
             "content": response_content,
             "history": conversation_history + [
@@ -79,5 +81,5 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
             ]
         }
     except Exception as e:
-        print(f"OpenAI APIエラー: {str(e)}")
+        logger.error(f"OpenAI APIエラー: {str(e)}")
         raise Exception(f"Failed to get ChatGPT response: {str(e)}")
