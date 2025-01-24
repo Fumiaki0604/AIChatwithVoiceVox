@@ -1,8 +1,33 @@
 import os
 from openai import OpenAI
+from datetime import datetime
+import locale
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 openai = OpenAI(api_key=OPENAI_API_KEY)
+
+# 日本語の曜日表示のために日本のロケールを設定
+try:
+    locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
+except locale.Error:
+    try:
+        # フォールバック: C.UTF-8を試す
+        locale.setlocale(locale.LC_TIME, 'C.UTF-8')
+    except locale.Error:
+        # 最終フォールバック: システムのデフォルトロケール
+        locale.setlocale(locale.LC_TIME, '')
+
+def get_current_datetime_str():
+    """現在の日時を日本語フォーマットで返す"""
+    now = datetime.now()
+    try:
+        # 日本語の曜日表示を試みる
+        current_date = now.strftime('%Y年%m月%d日(%a)')
+    except:
+        # フォールバック: 英語の曜日表示
+        current_date = now.strftime('%Y年%m月%d日(%a)')
+    current_time = now.strftime('%H:%M')
+    return current_date, current_time
 
 def get_chat_response(message, conversation_history=None, response_type="main_response"):
     try:
@@ -10,11 +35,19 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         if conversation_history is None:
             conversation_history = []
 
+        # 現在の日時を取得
+        current_date, current_time = get_current_datetime_str()
+
         # Prepare system message based on response type
         if response_type == "main_response":
-            system_message = "You are a helpful assistant. Provide clear and concise responses while maintaining context of the conversation."
+            system_message = f"""You are a helpful assistant. The current date is {current_date} and time is {current_time}.
+Remember this information but only use it when contextually relevant to the conversation.
+For example, if the user asks about today's plans or mentions time-sensitive topics.
+Provide clear and concise responses while maintaining context of the conversation."""
         else:
-            system_message = "You are reacting to another AI's response. Provide a brief, natural reaction to what was said while maintaining context."
+            system_message = f"""You are reacting to another AI's response. The current date is {current_date} and time is {current_time}.
+Remember this information but only use it when contextually relevant.
+Provide a brief, natural reaction to what was said while maintaining context."""
 
         # Construct messages array with system message and conversation history
         messages = [{"role": "system", "content": system_message}]
