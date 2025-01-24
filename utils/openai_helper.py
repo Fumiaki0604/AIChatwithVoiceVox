@@ -40,14 +40,18 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
 
         # Prepare system message based on response type
         if response_type == "main_response":
-            system_message = f"""You are a helpful assistant. The current date is {current_date} and time is {current_time}.
-Remember this information but only use it when contextually relevant to the conversation.
-For example, if the user asks about today's plans or mentions time-sensitive topics.
-Provide clear and concise responses while maintaining context of the conversation."""
+            system_message = f"""あなたは会話をサポートするアシスタントです。現在は{current_date} {current_time}です。
+この時間情報は記憶していますが、会話の文脈で必要な場合にのみ使用してください。
+例えば、以下のような場合に時間情報を活用します：
+- ユーザーが今日の予定や時間に関連する話題を出した場合
+- 季節や曜日に関連する自然な会話の流れがある場合
+- 特別な日付（祝日など）に関連する話題の場合
+
+会話の文脈に合わせて、自然な応答を心がけてください。"""
         else:
-            system_message = f"""You are reacting to another AI's response. The current date is {current_date} and time is {current_time}.
-Remember this information but only use it when contextually relevant.
-Provide a brief, natural reaction to what was said while maintaining context."""
+            system_message = f"""あなたは他のAIの発言に反応する立場です。現在は{current_date} {current_time}です。
+この時間情報は記憶していますが、会話の文脈で必要な場合にのみ使用してください。
+相手の発言に対して自然な反応を返しながら、会話の文脈を維持してください。"""
 
         # Construct messages array with system message and conversation history
         messages = [{"role": "system", "content": system_message}]
