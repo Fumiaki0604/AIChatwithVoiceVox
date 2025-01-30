@@ -161,7 +161,7 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         logger.debug(f"Messages being sent to OpenAI: {messages}")
 
         response = openai.chat.completions.create(
-            model="gpt-4-turbo-preview",  # gpt-4からgpt-4-turbo-previewに変更
+            model="gpt-4o-mini",  # 新しいモデルgpt-4o-miniを使用
             messages=messages,
             max_tokens=500,
             temperature=0.7
