@@ -290,6 +290,9 @@ function addMessage(text, type) {
             } else if (speakerA && speakerA.name === '四国めたん') {
                 aiIcon.src = '/static/assets/metan_icon.png';
                 aiIcon.alt = '四国めたん';
+            } else if (speakerA && speakerA.name === '雨晴はう') {
+                aiIcon.src = '/static/assets/hau_icon.png';
+                aiIcon.alt = '雨晴はう';
             } else {
                 aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
                 aiIcon.alt = speakerA ? speakerA.name : 'Speaker A';
@@ -301,6 +304,9 @@ function addMessage(text, type) {
             } else if (speakerB && speakerB.name === 'ずんだもん') {
                 aiIcon.src = '/static/assets/zunda_icon.png';
                 aiIcon.alt = 'ずんだもん';
+            } else if (speakerB && speakerB.name === '雨晴はう') {
+                aiIcon.src = '/static/assets/hau_icon.png';
+                aiIcon.alt = '雨晴はう';
             } else {
                 aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
                 aiIcon.alt = speakerB ? speakerB.name : 'Speaker B';
@@ -502,40 +508,54 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Update left character (Speaker A)
         console.log("Updating left character (Speaker A):", speakerA?.name);
-        if (speakerA && speakerA.name === '四国めたん') {
-            leftCharacter.innerHTML = `
-                <div class="character-container">
-                    <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
-                    <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
-                    <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
-                </div>
-            `;
-            // DOMの更新が完了するのを待ってから初期化
-            Promise.resolve().then(() => {
-                console.log("Setting up left character blinking");
-                setupBlinking(leftCharacter);
-            });
-        } else {
-            leftCharacter.innerHTML = '';
+        if (speakerA) {
+            if (speakerA.name === '四国めたん') {
+                leftCharacter.innerHTML = `
+                    <div class="character-container">
+                        <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                        <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                        <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
+                    </div>
+                `;
+                Promise.resolve().then(() => {
+                    console.log("Setting up left character blinking");
+                    setupBlinking(leftCharacter);
+                });
+            } else if (speakerA.name === '雨晴はう') {
+                leftCharacter.innerHTML = `
+                    <div class="character-container">
+                        <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
+                    </div>
+                `;
+            } else {
+                leftCharacter.innerHTML = '';
+            }
         }
 
         // Update right character (Speaker B)
         console.log("Updating right character (Speaker B):", speakerB?.name);
-        if (speakerB && speakerB.name === '四国めたん') {
-            rightCharacter.innerHTML = `
-                <div class="character-container">
-                    <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
-                    <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
-                    <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
-                </div>
-            `;
-            // DOMの更新が完了するのを待ってから初期化
-            Promise.resolve().then(() => {
-                console.log("Setting up right character blinking");
-                setupBlinking(rightCharacter);
-            });
-        } else {
-            rightCharacter.innerHTML = '';
+        if (speakerB) {
+            if (speakerB.name === '四国めたん') {
+                rightCharacter.innerHTML = `
+                    <div class="character-container">
+                        <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
+                        <img class="standing-character-eyes" src="/static/assets/metan_eye_open.png" alt="四国めたん目">
+                        <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
+                    </div>
+                `;
+                Promise.resolve().then(() => {
+                    console.log("Setting up right character blinking");
+                    setupBlinking(rightCharacter);
+                });
+            } else if (speakerB.name === '雨晴はう') {
+                rightCharacter.innerHTML = `
+                    <div class="character-container">
+                        <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
+                    </div>
+                `;
+            } else {
+                rightCharacter.innerHTML = '';
+            }
         }
     }
 
@@ -815,8 +835,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 chatMessages.innerHTML = '';
                 addMessage('会話履歴をリセットしました', 'system');
             } else {
-                const data = await response.json();
-                addMessage('エラーが発生しました: ' + data.error, 'error');
+                const data = await response.json();                addMessage('エラーが発生しました: ' + data.error, 'error');
             }
         } catch (error) {
             addMessage('通信エラーが発生しました', 'error');
