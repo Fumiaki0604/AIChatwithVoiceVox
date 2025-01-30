@@ -727,7 +727,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message: message })
+                body: JSON.stringify({
+                    message: message,
+                    speaker_a: speakerASelect.value,
+                    speaker_b: speakerBSelect.value
+                })
             });
 
             const data = await response.json();
@@ -749,6 +753,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 addMessage('エラーが発生しました: ' + data.error, 'error');
             }
         } catch (error) {
+            console.error('Error in sendMessage:', error);
             addMessage('通信エラーが発生しました', 'error');
         }
     }
