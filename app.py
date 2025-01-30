@@ -65,14 +65,14 @@ def chat():
         logger.debug(f"Current conversation history: {conversation_history}")
 
         # Get response for speaker A (using selected character)
-        response_a = get_chat_response(user_message, conversation_history, "main_response", speaker_a)
+        response_a = get_chat_response(user_message, conversation_history, speaker_a)
         logger.debug(f"Speaker A response: {response_a}")
 
         # Update conversation history with speaker A's response
         conversation_history = response_a['history']
 
         # Get response for speaker B's reaction (using selected character)
-        response_b = get_chat_response(response_a['content'], conversation_history, "reaction_response", speaker_b)
+        response_b = get_chat_response(response_a['content'], conversation_history, speaker_b)
         logger.debug(f"Speaker B response: {response_b}")
 
         # Update conversation history with speaker B's response
