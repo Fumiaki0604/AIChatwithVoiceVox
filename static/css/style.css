@@ -257,16 +257,10 @@ body {
 .standing-character {
     position: fixed;
     bottom: 0;
-    width: 300px; /* デフォルトサイズ */
-    height: 500px; /* デフォルトサイズ */
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* 四国めたん用のサイズ調整 */
-.standing-character[data-character="metan"] {
     width: 270px; /* 300pxから10%減少 */
     height: 450px; /* 500pxから10%減少 */
+    pointer-events: none;
+    z-index: 1;
 }
 
 .character-container {
@@ -284,7 +278,8 @@ body {
 }
 
 /* 雨晴はう用のスタイル調整 */
-.standing-character[data-character="hau"] .standing-character-base {
+.standing-character.left[data-character="hau"] .standing-character-base,
+.standing-character.right[data-character="hau"] .standing-character-base {
     width: 100%;
     height: 100%;
     object-fit: contain;

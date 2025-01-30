@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.body.appendChild(leftCharacter);
     document.body.appendChild(rightCharacter);
 
-    // Update standing characters
+    // Function to update standing characters
     function updateStandingCharacters() {
         console.log("Updating standing characters");
 
@@ -545,7 +545,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating left character (Speaker A):", speakerA?.name);
         if (speakerA) {
             if (speakerA.name === '四国めたん') {
-                leftCharacter.setAttribute('data-character', 'metan');
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
@@ -558,7 +557,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                     setupBlinking(leftCharacter);
                 });
             } else if (speakerA.name === '雨晴はう') {
-                leftCharacter.setAttribute('data-character', 'hau');
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
@@ -579,7 +577,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating right character (Speaker B):", speakerB?.name);
         if (speakerB) {
             if (speakerB.name === '四国めたん') {
-                rightCharacter.setAttribute('data-character', 'metan');
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
@@ -592,7 +589,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                     setupBlinking(rightCharacter);
                 });
             } else if (speakerB.name === '雨晴はう') {
-                rightCharacter.setAttribute('data-character', 'hau');
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
@@ -804,7 +800,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
                 // まばたきの持続時間（150-200ms）
                 setTimeout(() => {
-                    if (eyesImage && eyesImage`.parentNode && characterElement.contains(eyesImage)) {
+                    if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                         // 目を開く画像を読み込み
                         const openEyeImage = new Image();
                         openEyeImage.onload = () => {
