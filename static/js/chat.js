@@ -525,8 +525,13 @@ document.addEventListener('DOMContentLoaded', async function () {
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
+                        <img class="standing-character-eyes" src="/static/assets/hau_open_eyes.png" alt="雨晴はう目">
                     </div>
                 `;
+                Promise.resolve().then(() => {
+                    console.log("Setting up left character blinking for Hau");
+                    setupBlinkingForHau(leftCharacter);
+                });
             } else {
                 leftCharacter.innerHTML = '';
             }
@@ -551,8 +556,13 @@ document.addEventListener('DOMContentLoaded', async function () {
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
+                        <img class="standing-character-eyes" src="/static/assets/hau_open_eyes.png" alt="雨晴はう目">
                     </div>
                 `;
+                Promise.resolve().then(() => {
+                    console.log("Setting up right character blinking for Hau");
+                    setupBlinkingForHau(rightCharacter);
+                });
             } else {
                 rightCharacter.innerHTML = '';
             }
@@ -815,6 +825,106 @@ document.addEventListener('DOMContentLoaded', async function () {
                 startBlinking();
             } else {
                 console.log("Elements not ready after RAF, skipping");
+            }
+        });
+    }
+
+    // Add setupBlinkingForHau function
+    function setupBlinkingForHau(characterElement) {
+        console.log("setupBlinkingForHau called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
+        const eyesImage = characterElement.querySelector('.standing-character-eyes');
+        if (!eyesImage) {
+            console.log("No eyes image found for Hau, returning");
+            return;
+        }
+
+        let isBlinking = false;
+        let blinkIntervalId = null;
+
+        // Clean up existing timers
+        if (characterElement.cleanup) {
+            console.log("Cleaning up existing timers for Hau");
+            characterElement.cleanup();
+        }
+
+        function blink() {
+            if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
+                console.log("Eyes element not valid anymore for Hau, cleaning up");
+                characterElement.cleanup();
+                return;
+            }
+
+            if (isBlinking) {
+                console.log("Already blinking, skipping for Hau");
+                return;
+            }
+
+            console.log("Executing blink for Hau");
+            isBlinking = true;
+
+            // Load closed eye image
+            const closedEyeImage = new Image();
+            closedEyeImage.onload = () => {
+                eyesImage.src = closedEyeImage.src;
+                console.log("Hau eyes closed at:", new Date().toISOString());
+
+                // Blink duration (150-200ms)
+                setTimeout(() => {
+                    if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                        // Load open eye image
+                        const openEyeImage = new Image();
+                        openEyeImage.onload = () => {
+                            eyesImage.src = openEyeImage.src;
+                            console.log("Hau eyes opened at:", new Date().toISOString());
+                            isBlinking = false;
+                        };
+                        openEyeImage.src = '/static/assets/hau_open_eyes.png';
+                    }
+                }, 150 + Math.random() * 50);
+            };
+            closedEyeImage.src = '/static/assets/hau_close_eyes.png';
+        }
+
+        function startBlinking() {
+            console.log("Starting blink animation for Hau");
+            if (blinkIntervalId) {
+                console.log("Clearing existing interval for Hau");
+                clearInterval(blinkIntervalId);
+            }
+
+            const interval = 2500 + Math.random() * 1000;
+            console.log("Setting blink interval to", interval, "ms for Hau");
+            blinkIntervalId = setInterval(() => {
+                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                    blink();
+                } else {
+                    console.log("Character element invalid for Hau, cleaning up");
+                    characterElement.cleanup();
+                }
+            }, interval);
+
+            const initialDelay = 500 + Math.random() * 500;
+            console.log("Setting initial blink delay to", initialDelay, "ms for Hau");
+            setTimeout(() => {
+                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                    blink();
+                }
+            }, initialDelay);
+        }
+
+        characterElement.cleanup = () => {
+            console.log("Cleanup called for Hau");
+            if (blinkIntervalId) {
+                console.log("Clearing interval in cleanup for Hau");
+                clearInterval(blinkIntervalId);
+                blinkIntervalId = null;
+            }
+            isBlinking = false;
+        };
+
+        requestAnimationFrame(() => {
+            if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                startBlinking();
             }
         });
     }
