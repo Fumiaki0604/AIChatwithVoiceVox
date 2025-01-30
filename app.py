@@ -52,28 +52,32 @@ def get_speakers():
 def chat():
     try:
         data = request.json
-        user_message = data.get('message', '')
-        speaker_a = data.get('speaker_a', 'hau')  # デフォルトはhau
-        speaker_b = data.get('speaker_b', 'metan')  # デフォルトはmetan
+        user_message = data.get('message')
+        speaker_a = data.get('speaker_a')
+        speaker_b = data.get('speaker_b')
 
+        # 必要なパラメータの検証
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
+        if not speaker_a or not speaker_b:
+            return jsonify({'error': 'Both speaker_a and speaker_b must be specified'}), 400
+
+        # デバッグログの追加
+        logger.debug(f"Request data - message: {user_message}, speaker_a: {speaker_a}, speaker_b: {speaker_b}")
 
         # Get conversation history from session
         conversation_history = []  # テスト用に会話履歴をリセット
-        logger.debug(f"Processing chat message: {user_message}")
-        logger.debug(f"Current conversation history: {conversation_history}")
 
-        # Get response for speaker A (using selected character)
+        # Get response for speaker A
         response_a = get_chat_response(user_message, conversation_history, speaker_a)
-        logger.debug(f"Speaker A response: {response_a}")
+        logger.debug(f"Speaker A ({speaker_a}) response: {response_a}")
 
         # Update conversation history with speaker A's response
         conversation_history = response_a['history']
 
-        # Get response for speaker B's reaction (using selected character)
+        # Get response for speaker B's reaction
         response_b = get_chat_response(response_a['content'], conversation_history, speaker_b)
-        logger.debug(f"Speaker B response: {response_b}")
+        logger.debug(f"Speaker B ({speaker_b}) response: {response_b}")
 
         # Update conversation history with speaker B's response
         conversation_history = response_b['history']
