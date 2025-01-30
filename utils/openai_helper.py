@@ -34,7 +34,7 @@ def get_current_datetime_jp():
     else:
         time_of_day = "夜"
 
-    # 季節の詳細な判定
+    # 季節の判定
     month = now.month
     day = now.day
 
@@ -58,7 +58,8 @@ def get_current_datetime_jp():
         season = "冬"
         season_detail = "真冬" if month == 1 else ("厳冬" if month == 2 else "晩冬")
 
-    return {
+    # 日付情報をより詳細にログ出力
+    date_info = {
         "date": f"{now.year}年{now.month}月{now.day}日（{weekday}）",
         "time": f"{now.hour:02d}時{now.minute:02d}分",
         "time_of_day": time_of_day,
@@ -66,8 +67,19 @@ def get_current_datetime_jp():
         "season_detail": season_detail,
         "is_holiday": is_holiday,
         "holiday_name": holiday_name,
-        "full": f"{now.year}年{now.month}月{now.day}日（{weekday}） {now.hour:02d}時{now.minute:02d}分"
+        "full": f"{now.year}年{now.month}月{now.day}日（{weekday}） {now.hour:02d}時{now.minute:02d}分",
+        "raw": {
+            "year": now.year,
+            "month": now.month,
+            "day": now.day,
+            "weekday": weekday,
+            "hour": now.hour,
+            "minute": now.minute
+        }
     }
+
+    logger.debug(f"Generated date info: {date_info}")
+    return date_info
 
 def get_chat_response(message, conversation_history=None, response_type="main_response"):
     try:
@@ -76,15 +88,15 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
             conversation_history = []
 
         current_datetime = get_current_datetime_jp()
-        logger.debug(f"Current datetime: {current_datetime}")
+        logger.debug(f"Using datetime for chat response: {current_datetime}")
 
-        # Prepare system message based on response type
+        # システムメッセージの準備
         holiday_info = f"、本日は{current_datetime['holiday_name']}です" if current_datetime['holiday_name'] else ""
         seasonal_info = f"、{current_datetime['season_detail']}の時期" if current_datetime['season_detail'] else ""
 
         if response_type == "main_response":
             system_message = f"""あなたは会話を楽しむAIアシスタントです。
-現在の日時は{current_datetime['date']} {current_datetime['time']}です{holiday_info}。
+現在は{current_datetime['full']}です{holiday_info}。
 今は{current_datetime['time_of_day']}の時間帯で{seasonal_info}です。
 
 これらの時間や季節、祝日の情報は、会話の文脈で自然に活用してください。
@@ -93,17 +105,15 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
 状況に応じて、適切なタイミングでこれらの情報を活用してください。"""
         else:
             system_message = f"""あなたは他のAIの発言に反応するアシスタントです。
-現在の日時は{current_datetime['full']}です{holiday_info}。
+現在は{current_datetime['full']}です{holiday_info}。
 これらの時間情報は、会話の文脈で自然に活用してください。"""
 
-        # Construct messages array with system message and conversation history
+        # メッセージ配列の構築
         messages = [{"role": "system", "content": system_message}]
-
-        # Add conversation history
         messages.extend(conversation_history)
-
-        # Add current message
         messages.append({"role": "user", "content": message})
+
+        logger.debug(f"Sending messages to OpenAI: {messages}")
 
         response = openai.chat.completions.create(
             model="gpt-4",
@@ -113,8 +123,8 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         )
 
         response_content = response.choices[0].message.content
+        logger.debug(f"Received response from OpenAI: {response_content}")
 
-        # Return both the response content and the updated conversation history
         return {
             "content": response_content,
             "history": conversation_history + [
