@@ -58,17 +58,20 @@ def chat():
             return jsonify({'error': 'No message provided'}), 400
 
         # Get conversation history from session
-        conversation_history = session.get('conversation_history', [])
+        conversation_history = []  # テスト用に会話履歴をリセット
         logger.debug(f"Processing chat message: {user_message}")
+        logger.debug(f"Current conversation history: {conversation_history}")
 
         # Get ChatGPT response for speaker A
         response_a = get_chat_response(user_message, conversation_history, "main_response")
+        logger.debug(f"Speaker A response: {response_a}")
 
         # Update conversation history with speaker A's response
         conversation_history = response_a['history']
 
         # Get ChatGPT response for speaker B's reaction
         response_b = get_chat_response(response_a['content'], conversation_history, "reaction_response")
+        logger.debug(f"Speaker B response: {response_b}")
 
         # Update conversation history with speaker B's response
         conversation_history = response_b['history']

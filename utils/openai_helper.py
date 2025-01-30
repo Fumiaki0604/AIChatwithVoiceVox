@@ -16,8 +16,15 @@ def get_current_datetime_jp():
     # 日本のタイムゾーンで現在の日時を取得
     jst = pytz.timezone('Asia/Tokyo')
     now = datetime.now(jst)
+
+    # デバッグ用：生の日時データを出力
+    logger.debug(f"Raw datetime now: {now}")
+
     weekdays = ['月', '火', '水', '木', '金', '土', '日']
     weekday = weekdays[now.weekday()]
+
+    # デバッグ用：曜日の計算結果を出力
+    logger.debug(f"Calculated weekday: {weekday}")
 
     # 祝日判定
     is_holiday = jpholiday.is_holiday(now.date())
@@ -58,7 +65,7 @@ def get_current_datetime_jp():
         season = "冬"
         season_detail = "真冬" if month == 1 else ("厳冬" if month == 2 else "晩冬")
 
-    # 日付情報をより詳細にログ出力
+    # 日付情報の構築
     date_info = {
         "date": f"{now.year}年{now.month}月{now.day}日（{weekday}）",
         "time": f"{now.hour:02d}時{now.minute:02d}分",
@@ -78,21 +85,25 @@ def get_current_datetime_jp():
         }
     }
 
-    logger.debug(f"Generated date info: {date_info}")
+    # デバッグ用：最終的な日付情報を出力
+    logger.debug(f"Final date info: {date_info}")
     return date_info
 
 def get_chat_response(message, conversation_history=None, response_type="main_response"):
     try:
-        # Initialize conversation history if None
         if conversation_history is None:
             conversation_history = []
 
+        # 現在の日時を取得し、デバッグログを出力
         current_datetime = get_current_datetime_jp()
-        logger.debug(f"Using datetime for chat response: {current_datetime}")
+        logger.debug(f"Current datetime for chat response: {current_datetime}")
 
         # システムメッセージの準備
         holiday_info = f"、本日は{current_datetime['holiday_name']}です" if current_datetime['holiday_name'] else ""
         seasonal_info = f"、{current_datetime['season_detail']}の時期" if current_datetime['season_detail'] else ""
+
+        # 会話履歴をリセット（テスト用）
+        conversation_history = []
 
         if response_type == "main_response":
             system_message = f"""あなたは会話を楽しむAIアシスタントです。
@@ -113,7 +124,8 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         messages.extend(conversation_history)
         messages.append({"role": "user", "content": message})
 
-        logger.debug(f"Sending messages to OpenAI: {messages}")
+        # デバッグ用：OpenAIに送信するメッセージを出力
+        logger.debug(f"Messages being sent to OpenAI: {messages}")
 
         response = openai.chat.completions.create(
             model="gpt-4",
@@ -123,7 +135,7 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         )
 
         response_content = response.choices[0].message.content
-        logger.debug(f"Received response from OpenAI: {response_content}")
+        logger.debug(f"Response from OpenAI: {response_content}")
 
         return {
             "content": response_content,
