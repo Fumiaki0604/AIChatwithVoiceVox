@@ -257,8 +257,8 @@ body {
 .standing-character {
     position: fixed;
     bottom: 0;
-    width: 285px; /* 300pxから5%減少 */
-    height: 475px; /* 500pxから5%減少 */
+    width: 270px; /* 300pxから10%減少 */
+    height: 450px; /* 500pxから10%減少 */
     pointer-events: none;
     z-index: 1;
 }
