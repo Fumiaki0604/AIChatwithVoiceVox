@@ -51,14 +51,8 @@ def get_current_datetime_jp():
     jst = pytz.timezone('Asia/Tokyo')
     now = datetime.now(jst)
 
-    # デバッグ用：生の日時データを出力
-    logger.debug(f"Raw datetime now: {now}")
-
     weekdays = ['月', '火', '水', '木', '金', '土', '日']
     weekday = weekdays[now.weekday()]
-
-    # デバッグ用：曜日の計算結果を出力
-    logger.debug(f"Calculated weekday: {weekday}")
 
     # 祝日判定
     is_holiday = jpholiday.is_holiday(now.date())
@@ -75,11 +69,10 @@ def get_current_datetime_jp():
     else:
         time_of_day = "夜"
 
-    # 季節の判定
+    # 季節と詳細な季節区分の判定
     month = now.month
     day = now.day
 
-    # 二十四節気に基づいた詳細な季節区分
     if (month == 3 and day >= 21) or (month == 4) or (month == 5 and day <= 20):
         season = "春"
         season_detail = "春本番" if month == 4 else ("春始め" if month == 3 else "晩春")
@@ -99,7 +92,6 @@ def get_current_datetime_jp():
         season = "冬"
         season_detail = "真冬" if month == 1 else ("厳冬" if month == 2 else "晩冬")
 
-    # 日付情報の構築
     date_info = {
         "date": f"{now.year}年{now.month}月{now.day}日（{weekday}）",
         "time": f"{now.hour:02d}時{now.minute:02d}分",
@@ -118,26 +110,26 @@ def get_current_datetime_jp():
             "minute": now.minute
         }
     }
-
-    # デバッグ用：最終的な日付情報を出力
-    logger.debug(f"Final date info: {date_info}")
     return date_info
 
-def get_chat_response(message, conversation_history=None, response_type="main_response", character="hau"):
+def get_chat_response(message, conversation_history=None, character="hau"):
     try:
         if conversation_history is None:
             conversation_history = []
 
-        # 現在の日時を取得し、デバッグログを出力
+        # 現在の日時を取得
         current_datetime = get_current_datetime_jp()
-        logger.debug(f"Current datetime for chat response: {current_datetime}")
 
-        # システムメッセージの準備
+        # デバッグログの追加：選択されたキャラクターの情報を出力
+        logger.debug(f"Selected character: {character}")
+
+        # 祝日情報と季節情報の準備
         holiday_info = f"、本日は{current_datetime['holiday_name']}です" if current_datetime['holiday_name'] else ""
         seasonal_info = f"、{current_datetime['season_detail']}の時期" if current_datetime['season_detail'] else ""
 
         # 選択されたキャラクターのプロフィールを取得
         profile = CHARACTER_PROFILES.get(character, CHARACTER_PROFILES["hau"])
+        logger.debug(f"Using profile for character: {profile['name']}")
 
         # システムメッセージの構築
         system_message = f"""あなたは{profile['name']}として会話するAIアシスタントです。
@@ -157,7 +149,7 @@ def get_chat_response(message, conversation_history=None, response_type="main_re
         messages.extend(conversation_history)
         messages.append({"role": "user", "content": message})
 
-        # デバッグ用：OpenAIに送信するメッセージを出力
+        # デバッグログ：OpenAIに送信するメッセージを出力
         logger.debug(f"Messages being sent to OpenAI: {messages}")
 
         response = openai.chat.completions.create(
