@@ -22,16 +22,15 @@ function buildNodes(audioBuffer, ctx) {
 
 /* スペクトルをもとにリップシンクを行う */
 function syncLip(spectrums, voicevox_id, currentSpeaker) {
-    const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2); // 音声の主要周波数帯を取得 
-    const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0); // 周波数帯内の全スペクトラムの合計を算出
+    const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2);
+    const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0);
 
     console.log("Current total spectrum:", totalSpectrum);
     console.log("Previous spectrum:", prevSpec);
     console.log("Difference:", prevSpec - totalSpectrum);
-    console.log("Current voicevox_id:", voicevox_id); // デバッグ用：現在のボイスタイプIDを確認
+    console.log("Current voicevox_id:", voicevox_id);
 
-    // 四国めたん用のリップシンク（全ボイスタイプ対応）
-    // ノーマル: 2, あまあま: 0, つんつん: 6, セクシー: 4, ささやき: 36, ヒソヒソ: 37
+    // 四国めたん用のリップシンク
     if ([0, 2, 4, 6, 36, 37].includes(parseInt(voicevox_id))) {
         // 左側（話者A）の四国めたんの口のアニメーション
         const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
@@ -58,6 +57,36 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
                 rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
             } else {
                 rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            }
+        }
+    }
+    // 雨晴はう用のリップシンク
+    else if ([11].includes(parseInt(voicevox_id))) {  // 雨晴はうのvoicevox_id
+        // 左側（話者A）の雨晴はうの口のアニメーション
+        const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+        if (leftMouseElement && currentSpeaker === 'A') {
+            if (totalSpectrum > prevSpec) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close_middle.png')";
+            } else {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
+            }
+        }
+
+        // 右側（話者B）の雨晴はうの口のアニメーション
+        const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
+        if (rightMouseElement && currentSpeaker === 'B') {
+            if (totalSpectrum > prevSpec) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close_middle.png')";
+            } else {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
             }
         }
     }
@@ -489,7 +518,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.body.appendChild(leftCharacter);
     document.body.appendChild(rightCharacter);
 
-    // Function to update standing characters
+    // キャラクター表示部分の更新
     function updateStandingCharacters() {
         console.log("Updating standing characters");
 
@@ -526,6 +555,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
                         <img class="standing-character-eyes" src="/static/assets/hau_open_eyes.png" alt="雨晴はう目">
+                        <div class="character-mouth" style="background-image: url('/static/assets/hau_mouse_close.png')"></div>
                     </div>
                 `;
                 Promise.resolve().then(() => {
@@ -557,6 +587,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
                         <img class="standing-character-eyes" src="/static/assets/hau_open_eyes.png" alt="雨晴はう目">
+                        <div class="character-mouth" style="background-image: url('/static/assets/hau_mouse_close.png')"></div>
                     </div>
                 `;
                 Promise.resolve().then(() => {
@@ -945,7 +976,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 chatMessages.innerHTML = '';
                 addMessage('会話履歴をリセットしました', 'system');
             } else {
-                const data = await response.json();                addMessage('エラーが発生しました: ' + data.error, 'error');
+                const data = await response.json();
+                addMessage('エラーが発生しました: ' + data.error, 'error');
             }
         } catch (error) {
             addMessage('通信エラーが発生しました', 'error');
