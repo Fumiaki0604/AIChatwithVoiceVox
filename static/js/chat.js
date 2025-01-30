@@ -22,45 +22,42 @@ function buildNodes(audioBuffer, ctx) {
 
 /* スペクトルをもとにリップシンクを行う */
 function syncLip(spectrums, voicevox_id, currentSpeaker) {
-    const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2);
-    const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0);
+    const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2); // 音声の主要周波数帯を取得 
+    const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0); // 周波数帯内の全スペクトラムの合計を算出
 
     console.log("Current total spectrum:", totalSpectrum);
     console.log("Previous spectrum:", prevSpec);
     console.log("Difference:", prevSpec - totalSpectrum);
-    console.log("Current voicevox_id:", voicevox_id);
-    console.log("Current speaker:", currentSpeaker);
+    console.log("Current voicevox_id:", voicevox_id); // デバッグ用：現在のボイスタイプIDを確認
 
-    // 雨晴はう用のリップシンク
-    if ([11].includes(parseInt(voicevox_id))) {  // 雨晴はうのvoicevox_id
-        console.log("Lip sync for Hau");
-        // 左側（話者A）の雨晴はうの口のアニメーション
+    // 四国めたん用のリップシンク（全ボイスタイプ対応）
+    // ノーマル: 2, あまあま: 0, つんつん: 6, セクシー: 4, ささやき: 36, ヒソヒソ: 37
+    if ([0, 2, 4, 6, 36, 37].includes(parseInt(voicevox_id))) {
+        // 左側（話者A）の四国めたんの口のアニメーション
         const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
         if (leftMouseElement && currentSpeaker === 'A') {
-            console.log("Animating left Hau mouth");
             if (totalSpectrum > prevSpec) {
-                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open.png')";
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
             } else if (prevSpec - totalSpectrum < 250) {
-                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open_middle.png')";
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
             } else if (prevSpec - totalSpectrum < 500) {
-                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close_middle.png')";
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
             } else {
-                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
         }
 
-        // 右側（話者B）の雨晴はうの口のアニメーション
+        // 右側（話者B）の四国めたんの口のアニメーション
         const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
         if (rightMouseElement && currentSpeaker === 'B') {
-            console.log("Animating right Hau mouth");
             if (totalSpectrum > prevSpec) {
-                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open.png')";
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
             } else if (prevSpec - totalSpectrum < 250) {
-                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open_middle.png')";
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
             } else if (prevSpec - totalSpectrum < 500) {
-                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close_middle.png')";
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
             } else {
-                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
             }
         }
     }
@@ -492,7 +489,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.body.appendChild(leftCharacter);
     document.body.appendChild(rightCharacter);
 
-    // キャラクター表示部分の更新
+    // Function to update standing characters
     function updateStandingCharacters() {
         console.log("Updating standing characters");
 
@@ -513,7 +510,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating left character (Speaker A):", speakerA?.name);
         if (speakerA) {
             if (speakerA.name === '四国めたん') {
-                leftCharacter.setAttribute('data-character', 'metan'); // data-character属性を追加
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
@@ -526,12 +522,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                     setupBlinking(leftCharacter);
                 });
             } else if (speakerA.name === '雨晴はう') {
-                leftCharacter.setAttribute('data-character', 'hau');  // data-character属性を追加
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
                         <img class="standing-character-eyes" src="/static/assets/hau_open_eyes.png" alt="雨晴はう目">
-                        <div class="character-mouth" style="background-image: url('/static/assets/hau_mouse_close.png')"></div>
                     </div>
                 `;
                 Promise.resolve().then(() => {
@@ -547,7 +541,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating right character (Speaker B):", speakerB?.name);
         if (speakerB) {
             if (speakerB.name === '四国めたん') {
-                rightCharacter.setAttribute('data-character', 'metan'); // data-character属性を追加
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
@@ -560,12 +553,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                     setupBlinking(rightCharacter);
                 });
             } else if (speakerB.name === '雨晴はう') {
-                rightCharacter.setAttribute('data-character', 'hau');  // data-character属性を追加
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
                         <img class="standing-character-eyes" src="/static/assets/hau_open_eyes.png" alt="雨晴はう目">
-                        <div class="character-mouth" style="background-image: url('/static/assets/hau_mouse_close.png')"></div>
                     </div>
                 `;
                 Promise.resolve().then(() => {
@@ -827,7 +818,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             isBlinking = false;
         };
 
-                // アニメーション開始前に要素の存在を再確認
+        // アニメーション開始前に要素の存在を再確認
         requestAnimationFrame(() => {
             if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                 console.log("Starting blinking animation after RAF");
@@ -954,8 +945,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 chatMessages.innerHTML = '';
                 addMessage('会話履歴をリセットしました', 'system');
             } else {
-                const data = await response.json();
-                addMessage('エラーが発生しました: ' + data.error, 'error');
+                const data = await response.json();                addMessage('エラーが発生しました: ' + data.error, 'error');
             }
         } catch (error) {
             addMessage('通信エラーが発生しました', 'error');

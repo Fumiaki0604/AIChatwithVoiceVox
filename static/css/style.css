@@ -285,23 +285,6 @@ body {
     object-fit: contain;
 }
 
-.standing-character.left[data-character="hau"] .character-mouth,
-.standing-character.right[data-character="hau"] .character-mouth {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    z-index: 3;
-    transform: none;  /* 反転を解除 */
-}
-
-/* 既存のスタイルを上書き */
-.standing-character.left .character-mouth {
-    transform: none;  /* 左側キャラクターの口の反転を解除 */
-}
-
 .standing-character-eyes {
     width: 100%;
     height: 100%;
