@@ -806,7 +806,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                         openEyeImage.onload = () => {
                             eyesImage.src = openEyeImage.src;
                             console.log("Eyes opened at:", new Date().toISOString());
-                            isBlinking = false;
+                            isBlinking =false;
                         };
                         openEyeImage.src = '/static/assets/metan_eye_open.png';
                     }
