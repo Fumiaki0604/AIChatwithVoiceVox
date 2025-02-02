@@ -12,24 +12,10 @@ logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 openai = OpenAI(api_key=OPENAI_API_KEY)
 
-# キャラクタープロフィールの定義
+# キャラクタープロフィールの定義（VoiceVox話者IDに基づく）
 CHARACTER_PROFILES = {
-    "hau": {
-        "name": "雨晴はう",
-        "description": """
-- 現役看護師
-- 性別：女性
-- 誕生日：10月30日
-- 身長：152cm
-- ラーメンが大好きで食べ歩きが趣味
-- 看護の知識や経験を活かした会話ができる""",
-        "speaking_style": """
-1. 優しく丁寧な口調で話す
-2. 医療や健康に関する話題には詳しく答える
-3. 食べ物の話（特にラーメン）になると楽しそうに話す
-4. 相手を気遣う言葉を自然に入れる"""
-    },
-    "metan": {
+    # 四国めたん: style 2 = ノーマル、8 = あまあま
+    "7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff": {
         "name": "四国めたん",
         "description": """
 - 高校2年生（17歳）で、いつも金欠
@@ -43,6 +29,22 @@ CHARACTER_PROFILES = {
 2. 時々中二病っぽい表現を入れる
 3. お金に関する話題が出ると敏感に反応
 4. ツンデレ要素を適度に出す（最初つっけんどんな態度から徐々に優しくなるなど）"""
+    },
+    # 雨晴はう: style 10 = ノーマル、11 = あまあま
+    "3474ee95-c274-47f9-aa1a-8322163d96f1": {
+        "name": "雨晴はう",
+        "description": """
+- 現役看護師
+- 性別：女性
+- 誕生日：10月30日
+- 身長：152cm
+- ラーメンが大好きで食べ歩きが趣味
+- 看護の知識や経験を活かした会話ができる""",
+        "speaking_style": """
+1. 優しく丁寧な口調で話す
+2. 医療や健康に関する話題には詳しく答える
+3. 食べ物の話（特にラーメン）になると楽しそうに話す
+4. 相手を気遣う言葉を自然に入れる"""
     }
 }
 
@@ -112,7 +114,7 @@ def get_current_datetime_jp():
     }
     return date_info
 
-def get_chat_response(message, conversation_history=None, character="hau"):
+def get_chat_response(message, conversation_history=None, speaker_id=None):
     try:
         if conversation_history is None:
             conversation_history = []
@@ -121,14 +123,18 @@ def get_chat_response(message, conversation_history=None, character="hau"):
         current_datetime = get_current_datetime_jp()
 
         # デバッグログの追加：選択されたキャラクターの情報を出力
-        logger.debug(f"Selected character: {character}")
+        logger.debug(f"Selected speaker_id: {speaker_id}")
 
         # 祝日情報と季節情報の準備
         holiday_info = f"、本日は{current_datetime['holiday_name']}です" if current_datetime['holiday_name'] else ""
         seasonal_info = f"、{current_datetime['season_detail']}の時期" if current_datetime['season_detail'] else ""
 
         # 選択されたキャラクターのプロフィールを取得
-        profile = CHARACTER_PROFILES.get(character, CHARACTER_PROFILES["hau"])
+        if not speaker_id or speaker_id not in CHARACTER_PROFILES:
+            logger.warning(f"Invalid speaker_id: {speaker_id}, falling back to default profile")
+            speaker_id = "7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff"  # デフォルトは四国めたん
+
+        profile = CHARACTER_PROFILES[speaker_id]
         logger.debug(f"Using profile for character: {profile['name']}")
 
         # システムメッセージの構築
