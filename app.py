@@ -66,24 +66,31 @@ def chat():
         logger.debug(f"Request data - message: {user_message}, speaker_a: {speaker_a}, speaker_b: {speaker_b}")
 
         # Get conversation history from session
-        conversation_history = []  # テスト用に会話履歴をリセット
+        conversation_history = session.get('conversation_history', [])
+
+        # ユーザーのメッセージを履歴に追加
+        conversation_history.append({"role": "user", "content": user_message})
 
         # Get response for speaker A
         response_a = get_chat_response(user_message, conversation_history, speaker_a)
         logger.debug(f"Speaker A ({speaker_a}) response: {response_a}")
 
-        # Update conversation history with speaker A's response
-        conversation_history = response_a['history']
+        # 話者Aの応答を履歴に追加
+        updated_history = response_a['history']
 
-        # Get response for speaker B's reaction
-        response_b = get_chat_response(response_a['content'], conversation_history, speaker_b)
+        # 話者Bには、ユーザーのメッセージと話者Aの応答を含めた文脈を提供
+        context_for_b = (
+            f"ユーザー: {user_message}\n"
+            f"話者A: {response_a['content']}\n"
+            "上記の会話に対して反応してください。"
+        )
+
+        # Get response for speaker B's reaction to the conversation
+        response_b = get_chat_response(context_for_b, updated_history, speaker_b)
         logger.debug(f"Speaker B ({speaker_b}) response: {response_b}")
 
-        # Update conversation history with speaker B's response
-        conversation_history = response_b['history']
-
-        # Save updated conversation history to session
-        session['conversation_history'] = conversation_history
+        # Save final conversation history to session
+        session['conversation_history'] = response_b['history']
 
         return jsonify({
             'speaker_a': response_a['content'],
