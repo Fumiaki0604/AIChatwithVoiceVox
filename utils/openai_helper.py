@@ -170,7 +170,7 @@ def get_chat_response(message, conversation_history=None, speaker_id=None):
         logger.debug(f"Using profile for character: {profile['name']}")
 
         # システムメッセージの構築
-        system_message = f"""あなたは{profile['name']}として会話するAIアシスタントです。
+        base_system_message = f"""あなたは{profile['name']}として会話するAIアシスタントです。
 現在は{current_datetime['full']}です{holiday_info}。
 今は{current_datetime['time_of_day']}の時間帯で{seasonal_info}です。
 
@@ -180,18 +180,25 @@ def get_chat_response(message, conversation_history=None, speaker_id=None):
 これらの設定に基づいて、以下のように話してください：
 {profile['speaking_style']}
 
+会話の中では、他の参加者の発言を自然に聞いて反応してください。
 時間帯に応じた適切な受け答えを心がけてください。"""
 
         # メッセージ配列の構築
-        messages = [{"role": "system", "content": system_message}]
-        messages.extend(conversation_history)
-        messages.append({"role": "user", "content": message})
+        messages = [{"role": "system", "content": base_system_message}]
+
+        # 会話履歴を追加（直近の会話のみを含める）
+        recent_history = conversation_history[-4:] if len(conversation_history) > 4 else conversation_history
+        messages.extend(recent_history)
+
+        # 現在のメッセージを追加
+        if not any(msg['content'] == message for msg in recent_history):
+            messages.append({"role": "user", "content": message})
 
         # デバッグログ：OpenAIに送信するメッセージを出力
         logger.debug(f"Messages being sent to OpenAI: {messages}")
 
         response = openai.chat.completions.create(
-            model="gpt-4o-mini",  # 新しいモデルgpt-4o-miniを使用
+            model="gpt-4o-mini",
             messages=messages,
             max_tokens=500,
             temperature=0.7
@@ -202,10 +209,7 @@ def get_chat_response(message, conversation_history=None, speaker_id=None):
 
         return {
             "content": response_content,
-            "history": conversation_history + [
-                {"role": "user", "content": message},
-                {"role": "assistant", "content": response_content}
-            ]
+            "history": conversation_history
         }
     except Exception as e:
         logger.error(f"OpenAI APIエラー: {str(e)}")

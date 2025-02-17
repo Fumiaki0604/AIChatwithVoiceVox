@@ -68,29 +68,22 @@ def chat():
         # Get conversation history from session
         conversation_history = session.get('conversation_history', [])
 
-        # ユーザーのメッセージを履歴に追加
-        conversation_history.append({"role": "user", "content": user_message})
-
         # Get response for speaker A
         response_a = get_chat_response(user_message, conversation_history, speaker_a)
         logger.debug(f"Speaker A ({speaker_a}) response: {response_a}")
 
         # 話者Aの応答を履歴に追加
-        updated_history = response_a['history']
+        conversation_history.append({"role": "user", "content": user_message})
+        conversation_history.append({"role": "assistant", "content": response_a['content']})
 
-        # 話者Bには、ユーザーのメッセージと話者Aの応答を含めた文脈を提供
-        context_for_b = (
-            f"ユーザー: {user_message}\n"
-            f"話者A: {response_a['content']}\n"
-            "上記の会話に対して反応してください。"
-        )
-
-        # Get response for speaker B's reaction to the conversation
-        response_b = get_chat_response(context_for_b, updated_history, speaker_b)
+        # Get response for speaker B
+        # 話者Bは会話の流れを自然に理解して反応する
+        response_b = get_chat_response(user_message, conversation_history, speaker_b)
         logger.debug(f"Speaker B ({speaker_b}) response: {response_b}")
 
-        # Save final conversation history to session
-        session['conversation_history'] = response_b['history']
+        # 最終的な会話履歴を保存
+        conversation_history.append({"role": "assistant", "content": response_b['content']})
+        session['conversation_history'] = conversation_history
 
         return jsonify({
             'speaker_a': response_a['content'],
