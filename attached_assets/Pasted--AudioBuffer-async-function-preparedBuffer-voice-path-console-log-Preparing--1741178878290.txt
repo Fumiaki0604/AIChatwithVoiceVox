@@ -1,0 +1,137 @@
+/* 音声データをAudioBufferに変換 */
+async function preparedBuffer(voice_path) {
+    console.log("Preparing buffer for voice path:", voice_path);
+    const ctx = new AudioContext();
+    
+    const res = await fetch(voice_path);
+    if (!res.ok) {
+        throw new Error(`Failed to fetch audio data: ${res.status} ${res.statusText}`);
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+    return { audioBuffer, ctx };
+}
+
+/* 入力ノード、Analyserノードを生成し、出力層に接続 */
+function buildNodes(audioBuffer, ctx) {
+    const audioSrc = new AudioBufferSourceNode(ctx, { buffer: audioBuffer });
+    const analyser = new AnalyserNode(ctx);
+    analyser.fftSize = 512;
+    audioSrc.connect(analyser).connect(ctx.destination);
+    return { audioSrc, analyser };
+}
+
+/* リップシンク更新 */
+function updateLipSync(leftMouseElement, rightMouseElement, totalSpectrum, prevSpec) {
+    const diff = prevSpec - totalSpectrum;
+
+    if (totalSpectrum > prevSpec) {
+        leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+        rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+    } else if (diff < 250) {
+        leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+        rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+    } else if (diff < 500) {
+        leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+        rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+    } else {
+        leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+        rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+    }
+}
+
+/* スペクトルをもとにリップシンクを行う */
+function syncLip(spectrums, voicevox_id, currentSpeaker) {
+    const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2);
+    const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0);
+
+    let leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+    let rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
+
+    console.log("Current total spectrum:", totalSpectrum);
+    console.log("Previous spectrum:", prevSpec);
+    console.log("Difference:", prevSpec - totalSpectrum);
+    console.log("Current voicevox_id:", voicevox_id);
+
+    // キャラクターごとのスタイルIDによるリップシンク処理
+    if ([0, 2, 4, 6, 36, 37, 10, 8].includes(parseInt(voicevox_id))) {
+        if (currentSpeaker === 'A' && leftMouseElement) {
+            updateLipSync(leftMouseElement, rightMouseElement, totalSpectrum, prevSpec);
+        } else if (currentSpeaker === 'B' && rightMouseElement) {
+            updateLipSync(leftMouseElement, rightMouseElement, totalSpectrum, prevSpec);
+        }
+    }
+
+    prevSpec = totalSpectrum; // Update previous spectrum after processing
+}
+
+/* 音声再生処理 */
+async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
+    console.log("Starting playVoice with:", { voice_path, voicevox_id, message, currentSpeaker });
+
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => button.disabled = true);
+
+    try {
+        const { audioBuffer, ctx: newCtx } = await preparedBuffer(voice_path);
+        console.log("Audio buffer prepared successfully");
+
+        ctx = newCtx;
+        const { audioSrc: newAudioSrc, analyser: newAnalyser } = buildNodes(audioBuffer, ctx);
+        audioSrc = newAudioSrc;
+        analyser = newAnalyser;
+
+        isPlaying = true;
+        if (currentStatusIndicator) {
+            currentStatusIndicator.textContent = '再生中...';
+        }
+
+        console.log("Starting audio playback");
+        audioSrc.start();
+
+        // 40ms毎に音声のサンプリング→解析→リップシンクを行う
+        sampleInterval = setInterval(() => {
+            let spectrums = new Uint8Array(analyser.fftSize);
+            analyser.getByteFrequencyData(spectrums);
+            console.log('Frequency Data:', Array.from(spectrums.slice(0, 10)));
+            syncLip(spectrums, voicevox_id, currentSpeaker);
+        }, 40);
+
+        // 音声終了時のコールバック
+        audioSrc.onended = () => {
+            console.log("Audio playback ended");
+            clearInterval(sampleInterval);
+            audioSrc.disconnect();
+            ctx.close();
+            prevSpec = 0;
+            isPlaying = false;
+
+            buttons.forEach(button => button.disabled = false);
+
+            // 音声再生完了時にステータスを更新
+            if (currentStatusIndicator) {
+                currentStatusIndicator.textContent = '再生可能';
+            }
+        };
+    } catch (error) {
+        console.error('Error in playVoice:', error);
+        clearInterval(sampleInterval);
+        if (audioSrc) {
+            audioSrc.stop();
+            audioSrc = null;
+        }
+        if (ctx) {
+            ctx.close();
+            ctx = null;
+        }
+        prevSpec = 0;
+        isPlaying = false;
+
+        buttons.forEach(button => button.disabled = false);
+        
+        if (currentStatusIndicator) {
+            currentStatusIndicator.textContent = '再生エラー';
+        }
+        throw error;
+    }
+}
