@@ -2,14 +2,13 @@
 async function preparedBuffer(voice_path) {
     console.log("Preparing buffer for voice path:", voice_path);
     const ctx = new AudioContext();
-    
     const res = await fetch(voice_path);
     if (!res.ok) {
         throw new Error(`Failed to fetch audio data: ${res.status} ${res.statusText}`);
     }
     const arrayBuffer = await res.arrayBuffer();
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    return { audioBuffer, ctx };
+    return {audioBuffer, ctx};
 }
 
 /* 入力ノード、Analyserノードを生成し、出力層に接続 */
@@ -18,26 +17,7 @@ function buildNodes(audioBuffer, ctx) {
     const analyser = new AnalyserNode(ctx);
     analyser.fftSize = 512;
     audioSrc.connect(analyser).connect(ctx.destination);
-    return { audioSrc, analyser };
-}
-
-/* リップシンク更新 */
-function updateLipSync(leftMouseElement, rightMouseElement, totalSpectrum, prevSpec) {
-    const diff = prevSpec - totalSpectrum;
-
-    if (totalSpectrum > prevSpec) {
-        leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
-        rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
-    } else if (diff < 250) {
-        leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
-        rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
-    } else if (diff < 500) {
-        leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
-        rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
-    } else {
-        leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
-        rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
-    }
+    return {audioSrc, analyser};
 }
 
 /* スペクトルをもとにリップシンクを行う */
@@ -45,42 +25,124 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
     const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2);
     const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0);
 
-    let leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
-    let rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
-
     console.log("Current total spectrum:", totalSpectrum);
     console.log("Previous spectrum:", prevSpec);
     console.log("Difference:", prevSpec - totalSpectrum);
     console.log("Current voicevox_id:", voicevox_id);
 
-    // キャラクターごとのスタイルIDによるリップシンク処理
-    if ([0, 2, 4, 6, 36, 37, 10, 8].includes(parseInt(voicevox_id))) {
-        if (currentSpeaker === 'A' && leftMouseElement) {
-            updateLipSync(leftMouseElement, rightMouseElement, totalSpectrum, prevSpec);
-        } else if (currentSpeaker === 'B' && rightMouseElement) {
-            updateLipSync(leftMouseElement, rightMouseElement, totalSpectrum, prevSpec);
+    // 四国めたん用のリップシンク
+    if ([0, 2, 4, 6, 36, 37].includes(parseInt(voicevox_id))) {
+        const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+        if (leftMouseElement && currentSpeaker === 'A') {
+            if (totalSpectrum > prevSpec) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+            } else {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            }
+        }
+
+        const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
+        if (rightMouseElement && currentSpeaker === 'B') {
+            if (totalSpectrum > prevSpec) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+            } else {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            }
+        }
+    }
+    // 雨晴はう用のリップシンク
+    else if (parseInt(voicevox_id) === 10) {  // 雨晴はうのボイスID
+        const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+        if (leftMouseElement && currentSpeaker === 'A') {
+            if (totalSpectrum > prevSpec) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close_middle.png')";
+            } else {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
+            }
+        }
+
+        const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
+        if (rightMouseElement && currentSpeaker === 'B') {
+            if (totalSpectrum > prevSpec) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close_middle.png')";
+            } else {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
+            }
+        }
+    }
+    // 春日部つむぎ用のリップシンク部分を修正
+    else if (parseInt(voicevox_id) === 8) {  // 春日部つむぎのボイスID
+        const leftMouseElement = document.querySelector('.standing-character.left[data-character="tsumugi"] .character-mouth');
+        if (leftMouseElement && currentSpeaker === 'A') {
+            if (totalSpectrum > prevSpec) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close_middle.png')";
+            } else {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close.png')";
+            }
+        }
+
+        const rightMouseElement = document.querySelector('.standing-character.right[data-character="tsumugi"] .character-mouth');
+        if (rightMouseElement && currentSpeaker === 'B') {
+            if (totalSpectrum > prevSpec) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close_middle.png')";
+            } else {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close.png')";
+            }
         }
     }
 
-    prevSpec = totalSpectrum; // Update previous spectrum after processing
+    prevSpec = totalSpectrum;
 }
 
 /* 音声再生処理 */
 async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
-    console.log("Starting playVoice with:", { voice_path, voicevox_id, message, currentSpeaker });
+    console.log("Starting playVoice with:", {
+        voice_path,
+        voicevox_id,
+        message,
+        currentSpeaker
+    });
 
+    // 音声再生中はボタンを無効化し、2重で再生できないようにする
     const buttons = document.querySelectorAll('button');
-    buttons.forEach(button => button.disabled = true);
+    buttons.forEach(button => {
+        button.disabled = true;
+    });
 
     try {
-        const { audioBuffer, ctx: newCtx } = await preparedBuffer(voice_path);
+        const {audioBuffer, ctx: newCtx} = await preparedBuffer(voice_path);
         console.log("Audio buffer prepared successfully");
 
         ctx = newCtx;
-        const { audioSrc: newAudioSrc, analyser: newAnalyser } = buildNodes(audioBuffer, ctx);
+        const {audioSrc: newAudioSrc, analyser: newAnalyser} = buildNodes(audioBuffer, ctx);
         audioSrc = newAudioSrc;
         analyser = newAnalyser;
 
+        // 音声再生開始前に状態を更新
         isPlaying = true;
         if (currentStatusIndicator) {
             currentStatusIndicator.textContent = '再生中...';
@@ -101,12 +163,16 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
         audioSrc.onended = () => {
             console.log("Audio playback ended");
             clearInterval(sampleInterval);
-            audioSrc.disconnect();
+            audioSrc = null;
             ctx.close();
+            ctx = null;
             prevSpec = 0;
             isPlaying = false;
 
-            buttons.forEach(button => button.disabled = false);
+            // ボタンを再度有効化
+            buttons.forEach(button => {
+                button.disabled = false;
+            });
 
             // 音声再生完了時にステータスを更新
             if (currentStatusIndicator) {
