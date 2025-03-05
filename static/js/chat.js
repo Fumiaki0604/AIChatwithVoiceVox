@@ -544,6 +544,7 @@ class TtsQuestV3Voicevox extends Audio {
 }
 
 
+
 document.addEventListener('DOMContentLoaded', async function () {
     chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
@@ -591,10 +592,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                         <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
                     </div>
                 `;
-                Promise.resolve().then(() => {
+                // 瞬き処理を設定
+                setTimeout(() => {
                     console.log("Setting up left character blinking");
                     setupBlinking(leftCharacter);
-                });
+                }, 100);
             } else if (speakerA.name === '雨晴はう') {
                 leftCharacter.setAttribute('data-character', 'hau');
                 leftCharacter.innerHTML = `
@@ -604,10 +606,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                         <div class="character-mouth" style="background-image: url('/static/assets/hau_mouse_close.png')"></div>
                     </div>
                 `;
-                Promise.resolve().then(() => {
+                // 瞬き処理を設定
+                setTimeout(() => {
                     console.log("Setting up left character blinking for Hau");
                     setupBlinkingForHau(leftCharacter);
-                });
+                }, 100);
             } else if (speakerA.name === '春日部つむぎ') {
                 leftCharacter.setAttribute('data-character', 'tsumugi');
                 leftCharacter.innerHTML = `
@@ -617,10 +620,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                         <div class="character-mouth" style="background-image: url('/static/assets/tsumugi_mouse_close.png')"></div>
                     </div>
                 `;
-                Promise.resolve().then(() => {
+                // 瞬き処理を設定
+                setTimeout(() => {
                     console.log("Setting up left character blinking for Tsumugi");
                     setupBlinkingForTsumugi(leftCharacter);
-                });
+                }, 100);
             } else {
                 leftCharacter.innerHTML = '';
             }
@@ -638,10 +642,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                         <div class="character-mouth" style="background-image: url('/static/assets/metan_mouse_close.png')"></div>
                     </div>
                 `;
-                Promise.resolve().then(() => {
+                // 瞬き処理を設定
+                setTimeout(() => {
                     console.log("Setting up right character blinking");
                     setupBlinking(rightCharacter);
-                });
+                }, 100);
             } else if (speakerB.name === '雨晴はう') {
                 rightCharacter.setAttribute('data-character', 'hau');
                 rightCharacter.innerHTML = `
@@ -651,10 +656,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                         <div class="character-mouth" style="background-image: url('/static/assets/hau_mouse_close.png')"></div>
                     </div>
                 `;
-                Promise.resolve().then(() => {
+                // 瞬き処理を設定
+                setTimeout(() => {
                     console.log("Setting up right character blinking for Hau");
                     setupBlinkingForHau(rightCharacter);
-                });
+                }, 100);
             } else if (speakerB.name === '春日部つむぎ') {
                 rightCharacter.setAttribute('data-character', 'tsumugi');
                 rightCharacter.innerHTML = `
@@ -664,10 +670,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                         <div class="character-mouth" style="background-image: url('/static/assets/tsumugi_mouse_close.png')"></div>
                     </div>
                 `;
-                Promise.resolve().then(() => {
+                // 瞬き処理を設定
+                setTimeout(() => {
                     console.log("Setting up right character blinking for Tsumugi");
                     setupBlinkingForTsumugi(rightCharacter);
-                });
+                }, 100);
             } else {
                 rightCharacter.innerHTML = '';
             }
@@ -837,6 +844,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Setup blinking animation for Metan
     function setupBlinking(characterElement) {
         console.log("setupBlinking called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
+
+        // 既存のタイマーをクリーンアップ
+        if (characterElement.cleanup) {
+            console.log("Cleaning up existing timers");
+            characterElement.cleanup();
+        }
+
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
         if (!eyesImage) {
             console.log("No eyes image found, returning");
@@ -846,16 +860,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         let blinkIntervalId = null;
         let isBlinking = false;
 
-        // 既存のタイマーをクリーンアップ
-        if (characterElement.cleanup) {
-            console.log("Cleaning up existing timers");
-            characterElement.cleanup();
-        }
-
+        // 目を閉じる/開く処理
         function blink() {
             if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
                 console.log("Eyes element not valid anymore, cleaning up");
-                characterElement.cleanup();
+                if (characterElement.cleanup) characterElement.cleanup();
                 return;
             }
 
@@ -904,9 +913,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         };
     }
 
-    // Setup blinking for Hau
+    // 雨晴はう用の瞬き処理
     function setupBlinkingForHau(characterElement) {
         console.log("setupBlinkingForHau called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
+
+        // 既存のタイマーをクリーンアップ
+        if (characterElement.cleanup) {
+            console.log("Cleaning up existing timers for Hau");
+            characterElement.cleanup();
+        }
+
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
         if (!eyesImage) {
             console.log("No eyes image found for Hau, returning");
@@ -916,16 +932,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         let blinkIntervalId = null;
         let isBlinking = false;
 
-        // 既存のタイマーをクリーンアップ
-        if (characterElement.cleanup) {
-            console.log("Cleaning up existing timers for Hau");
-            characterElement.cleanup();
-        }
-
+        // 目を閉じる/開く処理
         function blink() {
             if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
                 console.log("Eyes element not valid anymore for Hau, cleaning up");
-                characterElement.cleanup();
+                if (characterElement.cleanup) characterElement.cleanup();
                 return;
             }
 
@@ -934,8 +945,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 return;
             }
 
-            console.log("Executing blink for Hau");
             isBlinking = true;
+            console.log("Hau eyes closed at:", new Date().toISOString());
 
             // 目を閉じる
             eyesImage.src = '/static/assets/hau_close_eyes.png';
@@ -944,6 +955,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/hau_open_eyes.png';
+                    console.log("Hau eyes opened at:", new Date().toISOString());
                     isBlinking = false;
                 }
             }, 100);
@@ -971,28 +983,29 @@ document.addEventListener('DOMContentLoaded', async function () {
         };
     }
 
-    // Add new function for Tsumugi's blinking
+    // 春日部つむぎ用の瞬き処理
     function setupBlinkingForTsumugi(characterElement) {
         console.log("setupBlinkingForTsumugi called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
 
         // 既存のタイマーをクリーンアップ
-        console.log("Cleaning up existing timers");
         if (characterElement.cleanup) {
+            console.log("Cleaning up existing timers for Tsumugi");
             characterElement.cleanup();
         }
 
-        const eyesElement = characterElement.querySelector('.standing-character-eyes');
-        if (!eyesElement) {
-            console.log("No eyes element found for Tsumugi");
+        const eyesImage = characterElement.querySelector('.standing-character-eyes');
+        if (!eyesImage) {
+            console.log("No eyes image found for Tsumugi, returning");
             return;
         }
 
-        let blinkTimerId = null;
         let blinkIntervalId = null;
+        let blinkTimerId = null;
         let isBlinking = false;
 
-        function executeBlink() {
-            if (!eyesElement || !eyesElement.parentNode || !characterElement.contains(eyesElement)) {
+        // つむぎの目を閉じる/開く処理
+        function blink() {
+            if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
                 console.log("Eyes element not valid anymore for Tsumugi, cleaning up");
                 if (characterElement.cleanup) characterElement.cleanup();
                 return;
@@ -1007,47 +1020,37 @@ document.addEventListener('DOMContentLoaded', async function () {
             console.log("Executing blink for Tsumugi at:", new Date().toISOString());
 
             // 目を閉じる
-            eyesElement.src = '/static/assets/tsumugi_eye_close.png';
+            eyesImage.src = '/static/assets/tsumugi_eye_close.png';
 
             // 0.2秒後に目を開く
             setTimeout(() => {
-                if (eyesElement && eyesElement.parentNode && characterElement.contains(eyesElement)) {
-                    eyesElement.src = '/static/assets/tsumugi_eye_open.png';
+                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                    eyesImage.src = '/static/assets/tsumugi_eye_open.png';
                     console.log("Tsumugi eyes opened at:", new Date().toISOString());
                     isBlinking = false;
                 }
             }, 200);
         }
 
+        console.log("Starting blinking animation for Tsumugi");
+
         // 最初のまばたきを0.5〜2秒後に設定
         const initialDelay = Math.random() * 1500 + 500;
-        console.log("Setting initial blink delay to", initialDelay, "ms");
 
-        // 遅延実行を保証するためにRAFを使用
-        requestAnimationFrame(() => {
-            if (!eyesElement || !eyesElement.parentNode || !characterElement.contains(eyesElement)) {
-                console.log("Elements not ready after RAF, skipping");
-                return;
-            }
+        blinkTimerId = setTimeout(() => {
+            console.log("Starting first blink for Tsumugi");
+            blink();
 
-            console.log("Starting blinking animation after RAF");
+            // その後は3〜5秒おきにまばたき
+            const interval = Math.random() * 2000 + 3000;
+            console.log("Setting blink interval to", interval, "ms for Tsumugi");
 
-            // 最初のまばたき
-            blinkTimerId = setTimeout(() => {
-                console.log("Starting blink animation");
-                executeBlink();
-
-                // 定期的なまばたきの設定
-                const blinkInterval = Math.random() * 2000 + 3000; // 3-5秒
-                console.log("Setting blink interval to", blinkInterval, "ms");
-
-                blinkIntervalId = setInterval(() => {
-                    if (Math.random() < 0.8) { // 80%の確率でまばたき
-                        executeBlink();
-                    }
-                }, blinkInterval);
-            }, initialDelay);
-        });
+            blinkIntervalId = setInterval(() => {
+                if (Math.random() < 0.8) { // 80%の確率でまばたき
+                    blink();
+                }
+            }, interval);
+        }, initialDelay);
 
         // クリーンアップ関数
         characterElement.cleanup = () => {
