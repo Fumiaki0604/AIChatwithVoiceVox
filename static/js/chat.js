@@ -428,6 +428,8 @@ let audioSrc = null; // AudioBufferSourceNode: 音声入力ノード
 let analyser = null; // AnalyserNode: 音声解析ノード
 let sampleInterval = null;
 let prevSpec = 0; // 前回のサンプリングで取得したスペクトルの合計値
+let preloadedImages = {}; // プリロードした画像を保持するオブジェクト
+let isPreloadComplete = false; // 画像のプリロードが完了したかどうか
 
 
 function getCurrentTime() {
@@ -543,9 +545,67 @@ class TtsQuestV3Voicevox extends Audio {
     }
 }
 
+// 画像をプリロードする関数
+function preloadImages() {
+    console.log("Starting image preload...");
 
+    // プリロードする画像のリスト
+    const imageUrls = [
+        '/static/assets/metan_eye_open.png',
+        '/static/assets/metan_eye_close.png',
+        '/static/assets/metan_mouse_open.png',
+        '/static/assets/metan_mouse_open_middle.png',
+        '/static/assets/metan_mouse_close_middle.png',
+        '/static/assets/metan_mouse_close.png',
+        '/static/assets/hau_open_eyes.png',
+        '/static/assets/hau_close_eyes.png',
+        '/static/assets/hau_mouse_open.png',
+        '/static/assets/hau_mouse_open_middle.png',
+        '/static/assets/hau_mouse_close_middle.png',
+        '/static/assets/hau_mouse_close.png',
+        '/static/assets/tsumugi_eye_open.png',
+        '/static/assets/tsumugi_eye_close.png',
+        '/static/assets/tsumugi_mouse_open.png',
+        '/static/assets/tsumugi_mouse_open_middle.png',
+        '/static/assets/tsumugi_mouse_close_middle.png',
+        '/static/assets/tsumugi_mouse_close.png',
+        '/static/assets/standing_metan.png',
+        '/static/assets/hau_standing.png',
+        '/static/assets/standing_tsumugi.png'
+    ];
+
+    // すべての画像をプリロード
+    let loadedCount = 0;
+    imageUrls.forEach(url => {
+        console.log(`Preloading image: ${url}`);
+        const img = new Image();
+        img.onload = () => {
+            loadedCount++;
+            console.log(`Loaded image ${loadedCount}/${imageUrls.length}: ${url}`);
+            preloadedImages[url] = img;
+
+            if (loadedCount === imageUrls.length) {
+                console.log("All images preloaded successfully!");
+                isPreloadComplete = true;
+            }
+        };
+        img.onerror = (err) => {
+            console.error(`Failed to load image: ${url}`, err);
+            loadedCount++;
+            // エラーがあっても続行
+            if (loadedCount === imageUrls.length) {
+                console.log("Image preloading completed with some errors");
+                isPreloadComplete = true;
+            }
+        };
+        img.src = url;
+    });
+}
 
 document.addEventListener('DOMContentLoaded', async function () {
+    // 画像をプリロード
+    preloadImages();
+
     chatMessages = document.getElementById('chat-messages');
     const userInput = document.getElementById('user-input');
     const sendButton = document.getElementById('send-button');
@@ -672,8 +732,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 `;
                 // 瞬き処理を設定
                 setTimeout(() => {
-                    console.log("Setting up right character blinking for Tsumugi");
-                    setupBlinkingForTsumugi(rightCharacter);
+                    console.log("Setting up right character blinking for Tsumugi");                    setupBlinkingForTsumugi(rightCharacter);
                 }, 100);
             } else {
                 rightCharacter.innerHTML = '';
@@ -787,8 +846,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error('Failed to fetch speakers:', error);
     }
 
-    let conversationHistory = [];
-
     // Send message to server
     async function sendMessage() {
         const message = userInput.value.trim();
@@ -880,7 +937,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             // 目を閉じる
             eyesImage.src = '/static/assets/metan_eye_close.png';
 
-            // 0.1秒後に目を開く
+            // 目を閉じている時間を長くする（500ms）
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/metan_eye_open.png';
@@ -888,17 +945,18 @@ document.addEventListener('DOMContentLoaded', async function () {
                     console.log("Eyes opened at:", endTime.toISOString());
                     isBlinking = false;
                 }
-            }, 100);
+            }, 500); // 500msに延長
         }
 
         // 最初のまばたきは0.5〜2秒後
         const initialDelay = Math.random() * 1500 + 500;
         setTimeout(() => {
+            console.log("Starting first blink for Metan");
             blink();
             // その後は2〜5秒おきにまばたき
             blinkIntervalId = setInterval(() => {
                 if (Math.random() < 0.7) { // 70%の確率でまばたき
-                    blink();
+                     blink();
                 }
             }, Math.random() * 3000 + 2000);
         }, initialDelay);
@@ -951,19 +1009,20 @@ document.addEventListener('DOMContentLoaded', async function () {
             // 目を閉じる
             eyesImage.src = '/static/assets/hau_close_eyes.png';
 
-            // 0.1秒後に目を開く
+            // 目を閉じている時間を長くする（500ms）
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/hau_open_eyes.png';
                     console.log("Hau eyes opened at:", new Date().toISOString());
                     isBlinking = false;
                 }
-            }, 100);
+            }, 500); // 500msに延長
         }
 
         // 最初のまばたきは0.5〜2秒後
         const initialDelay = Math.random() * 1500 + 500;
         setTimeout(() => {
+            console.log("Starting first blink for Hau");
             blink();
             // その後は3〜6秒おきにまばたき
             blinkIntervalId = setInterval(() => {
@@ -1022,14 +1081,14 @@ document.addEventListener('DOMContentLoaded', async function () {
             // 目を閉じる
             eyesImage.src = '/static/assets/tsumugi_eye_close.png';
 
-            // 0.2秒後に目を開く
+            // 目を閉じている時間を長くする（800ms）
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/tsumugi_eye_open.png';
                     console.log("Tsumugi eyes opened at:", new Date().toISOString());
                     isBlinking = false;
                 }
-            }, 200);
+            }, 800); // 800msに延長
         }
 
         console.log("Starting blinking animation for Tsumugi");
