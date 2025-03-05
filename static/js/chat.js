@@ -742,12 +742,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         speakerASelect.value = speakers.find(s => s.name === 'ずんだもん')?.speaker_uuid || speakers[0]?.speaker_uuid;
         speakerBSelect.value = speakers.find(s => s.name === '四国めたん')?.speaker_uuid || speakers[1]?.speaker_uuid;
 
-        //        // 初期スタイルの設定
+        // 初期スタイルの設定
         updateStyles(speakerASelect.value, styleASelect);
         updateStyles(speakerBSelect.value, styleBSelect);
 
-        // デフォルトのスタイルを「あまあま」に設定（存在する場合）
-        const setDefaultStyle = (styleSelect, speaker) => {
+        // スタイル選択を「あまあま」に設定
+        const updateSpeakerStyle = (speaker, styleSelect) => {
             const amaama = speaker.styles.find(s => s.name === 'あまあま');
             if (amaama) {
                 styleSelect.value = amaama.id;
@@ -757,39 +757,35 @@ document.addEventListener('DOMContentLoaded', async function () {
         const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
         const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
 
-        if (speakerA) setDefaultStyle(styleASelect, speakerA);
-        if (speakerB) setDefaultStyle(styleBSelect, speakerB);
+        if (speakerA) updateSpeakerStyle(speakerA, styleASelect);
+        if (speakerB) updateSpeakerStyle(speakerB, styleBSelect);
 
-        updateStandingCharacters();
-
+        // 話者変更時にスタイルも更新
         speakerASelect.addEventListener('change', () => {
             updateStyles(speakerASelect.value, styleASelect);
-            const newSpeaker = speakers.find(s => s.speaker_uuid === speakerASelect.value);
-            if (newSpeaker) setDefaultStyle(styleASelect, newSpeaker);
-            updateStandingCharacters();
+            const speaker = speakers.find(s => s.speaker_uuid === speakerASelect.value);
+            if (speaker) updateSpeakerStyle(speaker, styleASelect);
         });
 
         speakerBSelect.addEventListener('change', () => {
             updateStyles(speakerBSelect.value, styleBSelect);
-            const newSpeaker = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
-            if (newSpeaker) setDefaultStyle(styleBSelect, newSpeaker);
-            updateStandingCharacters();
+            const speaker = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
+            if (speaker) updateSpeakerStyle(speaker, styleBSelect);
         });
 
+        // 初期の立ち絵更新
+        updateStandingCharacters();
+
     } catch (error) {
-        console.error('Error loading speakers:', error);
+        console.error('Failed to fetch speakers:', error);
     }
 
+    let conversationHistory = [];
 
-
-
-
-    async function sendMessage() {
-        const message = userInput.value.trim();
-        if (!message) return;
-
-        addMessage(message, 'user');
-        userInput.value = '';
+    // Send message to ChatGPT API
+    async function sendMessageToChatGPT(message, speaker) {
+        // Display loading message
+        const loadingMessage = addMessage('考え中...', speaker === 'A' ? 'ai-message-a' : 'ai-message-b');
 
         try {
             const response = await fetch('/chat', {
@@ -799,42 +795,55 @@ document.addEventListener('DOMContentLoaded', async function () {
                 },
                 body: JSON.stringify({
                     message: message,
-                    speaker_a: speakerASelect.value,
-                    speaker_b: speakerBSelect.value
-                })
+                    history: conversationHistory,
+                    speaker_id: speaker === 'A' ? speakerASelect.value : speakerBSelect.value
+                }),
             });
 
             const data = await response.json();
-            if (response.ok) {
-                // 話者Aのメッセージを追加して再生
-                const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
-                if (speakerAMessage) {
-                    await play(data.speaker_a, styleASelect.value, 'A');
-                }
 
-                // 話者Bのメッセージを追加して再生（話者Aの再生後に遅延して実行）
-                const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
-                if (speakerBMessage) {
-                    setTimeout(async () => {
-                        await play(data.speaker_b, styleBSelect.value, 'B');
-                    }, data.speaker_a.length * 180);
-                }
-            } else {
-                addMessage('エラーが発生しました: ' + data.error, 'error');
+            if (data.error) {
+                throw new Error(data.error);
             }
+
+            // Add new message to history
+            conversationHistory.push({ role: 'user', content: message });
+            conversationHistory.push({ role: 'assistant', content: data.content });
+
+            // Remove loading message
+            chatMessages.removeChild(loadingMessage);
+
+            // Display real response
+            addMessage(data.content, speaker === 'A' ? 'ai-message-a' : 'ai-message-b');
         } catch (error) {
-            console.error('Error in sendMessage:', error);
-            addMessage('通信エラーが発生しました', 'error');
+            console.error('Error sending message to ChatGPT:', error);
+            // Update loading message with error
+            loadingMessage.querySelector('.message-content').textContent = 'エラーが発生しました: ' + error.message;
         }
     }
 
-    sendButton.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', function (e) {
+    sendButton.addEventListener('click', () => {
+        sendMessage();
+    });
+
+    userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             sendMessage();
         }
     });
 
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        showUserMessage(message);
+        userInput.value = '';
+
+        // Send to both speakers
+        await sendMessageToChatGPT(message, 'A');
+    }
+
+    // Setup blinking animation for Metan
     function setupBlinking(characterElement) {
         console.log("setupBlinking called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
@@ -866,82 +875,46 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             console.log("Executing blink");
             isBlinking = true;
+            const startTime = new Date();
+            console.log("Eyes closed at:", startTime.toISOString());
 
-            // 目を閉じる画像を読み込み
-            const closedEyeImage = new Image();
-            closedEyeImage.onload = () => {
-                eyesImage.src = closedEyeImage.src;
-                console.log("Eyes closed at:", new Date().toISOString());
+            // 目を閉じる
+            eyesImage.src = '/static/assets/metan_eye_close.png';
 
-                // まばたきの持続時間（150-200ms）
-                setTimeout(() => {
-                    if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                        // 目を開く画像を読み込み
-                        const openEyeImage = new Image();
-                        openEyeImage.onload = () => {
-                            eyesImage.src = openEyeImage.src;
-                            console.log("Eyes opened at:", new Date().toISOString());
-                            isBlinking =false;
-                        };
-                        openEyeImage.src = '/static/assets/metan_eye_open.png';
-                    }
-                }, 150 + Math.random() * 50); // ランダムな持続時間を追加
-            };
-            closedEyeImage.src = '/static/assets/metan_eye_close.png';
-        }
-
-        function startBlinking() {
-            console.log("Starting blink animation");
-            if (blinkIntervalId) {
-                console.log("Clearing existing interval");
-                clearInterval(blinkIntervalId);
-            }
-
-            // まばたきのインターバルを2.5-3.5秒の範囲で設定
-            const interval = 2500 + Math.random() * 1000;
-            console.log("Setting blink interval to", interval, "ms");
-            blinkIntervalId = setInterval(() => {
-                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                    blink();
-                } else {
-                    console.log("Character element invalid, cleaning up");
-                    characterElement.cleanup();
-                }
-            }, interval);
-
-            // 初回まばたきを0.5-1秒後に開始
-            const initialDelay = 500 + Math.random() * 500;
-            console.log("Setting initial blink delay to", initialDelay, "ms");
+            // 0.1秒後に目を開く
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                    blink();
+                    eyesImage.src = '/static/assets/metan_eye_open.png';
+                    const endTime = new Date();
+                    console.log("Eyes opened at:", endTime.toISOString());
+                    isBlinking = false;
                 }
-            }, initialDelay);
+            }, 100);
         }
 
-        // クリーンアップ用の関数を改善
+        // 最初のまばたきは0.5〜2秒後
+        const initialDelay = Math.random() * 1500 + 500;
+        setTimeout(() => {
+            blink();
+            // その後は2〜5秒おきにまばたき
+            blinkIntervalId = setInterval(() => {
+                if (Math.random() < 0.7) { // 70%の確率でまばたき
+                    blink();
+                }
+            }, Math.random() * 3000 + 2000);
+        }, initialDelay);
+
+        // クリーンアップ関数
         characterElement.cleanup = () => {
-            console.log("Cleanup called");
+            console.log("Cleaning up blink interval");
             if (blinkIntervalId) {
-                console.log("Clearing interval in cleanup");
                 clearInterval(blinkIntervalId);
                 blinkIntervalId = null;
             }
-            isBlinking = false;
         };
-
-        // アニメーション開始前に要素の存在を再確認
-        requestAnimationFrame(() => {
-            if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                console.log("Starting blinking animation after RAF");
-                startBlinking();
-            } else {
-                console.log("Elements not ready after RAF, skipping");
-            }
-        });
     }
 
-    // Add setupBlinkingForHau function
+    // Setup blinking for Hau
     function setupBlinkingForHau(characterElement) {
         console.log("setupBlinkingForHau called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
         const eyesImage = characterElement.querySelector('.standing-character-eyes');
@@ -953,7 +926,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         let isBlinking = false;
         let blinkIntervalId = null;
 
-        // Clean up existing timers
+        // 既存のタイマーをクリーンアップ
         if (characterElement.cleanup) {
             console.log("Cleaning up existing timers for Hau");
             characterElement.cleanup();
@@ -967,78 +940,45 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
 
             if (isBlinking) {
-                console.log("Already blinking, skipping for Hau");
+                console.log("Hau already blinking, skipping");
                 return;
             }
 
             console.log("Executing blink for Hau");
             isBlinking = true;
 
-            // Load closed eye image
-            const closedEyeImage = new Image();
-            closedEyeImage.onload = () => {
-                eyesImage.src = closedEyeImage.src;
-                console.log("Hau eyes closed at:", new Date().toISOString());
+            // 目を閉じる
+            eyesImage.src = '/static/assets/hau_close_eyes.png';
 
-                // Blink duration (150-200ms)
-                setTimeout(() => {
-                    if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                        // Load open eye image
-                        const openEyeImage = new Image();
-                        openEyeImage.onload = () => {
-                            eyesImage.src = openEyeImage.src;
-                            console.log("Hau eyes opened at:", new Date().toISOString());
-                            isBlinking = false;
-                        };
-                        openEyeImage.src = '/static/assets/hau_open_eyes.png';
-                    }
-                }, 150 + Math.random() * 50);
-            };
-            closedEyeImage.src = '/static/assets/hau_close_eyes.png';
-        }
-
-        function startBlinking() {
-            console.log("Starting blink animation for Hau");
-            if (blinkIntervalId) {
-                console.log("Clearing existing interval for Hau");
-                clearInterval(blinkIntervalId);
-            }
-
-            const interval = 2500 + Math.random() * 1000;
-            console.log("Setting blink interval to", interval, "ms for Hau");
-            blinkIntervalId = setInterval(() => {
-                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                    blink();
-                } else {
-                    console.log("Character element invalid for Hau, cleaning up");
-                    characterElement.cleanup();
-                }
-            }, interval);
-
-            const initialDelay = 500 + Math.random() * 500;
-            console.log("Setting initial blink delay to", initialDelay, "ms for Hau");
+            // 0.1秒後に目を開く
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                    blink();
+                    eyesImage.src = '/static/assets/hau_open_eyes.png';
+                    isBlinking = false;
                 }
-            }, initialDelay);
+            }, 100);
         }
 
+        // 最初のまばたきは0.5〜2秒後
+        const initialDelay = Math.random() * 1500 + 500;
+        setTimeout(() => {
+            blink();
+            // その後は3〜6秒おきにまばたき
+            blinkIntervalId = setInterval(() => {
+                if (Math.random() < 0.8) { // 80%の確率でまばたき
+                    blink();
+                }
+            }, Math.random() * 3000 + 3000);
+        }, initialDelay);
+
+        // クリーンアップ関数
         characterElement.cleanup = () => {
-            console.log("Cleanup called for Hau");
+            console.log("Cleaning up Hau blink interval");
             if (blinkIntervalId) {
-                console.log("Clearing interval in cleanup for Hau");
                 clearInterval(blinkIntervalId);
                 blinkIntervalId = null;
             }
-            isBlinking = false;
         };
-
-        requestAnimationFrame(() => {
-            if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                startBlinking();
-            }
-        });
     }
 
     // Add new function for Tsumugi's blinking
@@ -1137,24 +1077,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Add reset conversation button handler
     const resetButton = document.getElementById('reset-conversation');
     resetButton.addEventListener('click', async () => {
-        try {
-            const response = await fetch('/reset-conversation', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                // Clear chat messages from the UI
-                chatMessages.innerHTML = '';
-                addMessage('会話履歴をリセットしました', 'system');
-            } else {
-                const data = await response.json();
-                addMessage('エラーが発生しました: ' + data.error, 'error');
-            }
-        } catch (error) {
-            addMessage('通信エラーが発生しました', 'error');
-        }
+        conversationHistory = [];
+        chatMessages.innerHTML = '';
+        addMessage('会話がリセットされました', 'system-message');
     });
 });
