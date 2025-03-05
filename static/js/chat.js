@@ -87,8 +87,8 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
         }
     }
     // 春日部つむぎ用のリップシンク
-    else if ([47, 48, 49, 50].includes(parseInt(voicevox_id))) {  // 春日部つむぎのボイスIDを指定（適宜変更してください）
-        const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+    else if ([47, 48, 49, 50].includes(parseInt(voicevox_id))) {  // 春日部つむぎのボイスID
+        const leftMouseElement = document.querySelector('.standing-character.left[data-character="tsumugi"] .character-mouth');
         if (leftMouseElement && currentSpeaker === 'A') {
             if (totalSpectrum > prevSpec) {
                 leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open.png')";
@@ -101,7 +101,7 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
             }
         }
 
-        const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
+        const rightMouseElement = document.querySelector('.standing-character.right[data-character="tsumugi"] .character-mouth');
         if (rightMouseElement && currentSpeaker === 'B') {
             if (totalSpectrum > prevSpec) {
                 rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open.png')";
@@ -583,6 +583,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating left character (Speaker A):", speakerA?.name);
         if (speakerA) {
             if (speakerA.name === '四国めたん') {
+                leftCharacter.setAttribute('data-character', 'metan');
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
@@ -595,6 +596,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     setupBlinking(leftCharacter);
                 });
             } else if (speakerA.name === '雨晴はう') {
+                leftCharacter.setAttribute('data-character', 'hau');
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
@@ -607,6 +609,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     setupBlinkingForHau(leftCharacter);
                 });
             } else if (speakerA.name === '春日部つむぎ') {
+                leftCharacter.setAttribute('data-character', 'tsumugi');
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/standing_tsumugi.png" alt="春日部つむぎ">
@@ -627,6 +630,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Updating right character (Speaker B):", speakerB?.name);
         if (speakerB) {
             if (speakerB.name === '四国めたん') {
+                rightCharacter.setAttribute('data-character', 'metan');
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/standing_metan.png" alt="四国めたん">
@@ -639,6 +643,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     setupBlinking(rightCharacter);
                 });
             } else if (speakerB.name === '雨晴はう') {
+                rightCharacter.setAttribute('data-character', 'hau');
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/hau_standing.png" alt="雨晴はう">
@@ -651,6 +656,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     setupBlinkingForHau(rightCharacter);
                 });
             } else if (speakerB.name === '春日部つむぎ') {
+                rightCharacter.setAttribute('data-character', 'tsumugi');
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/standing_tsumugi.png" alt="春日部つむぎ">
@@ -745,7 +751,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const amaama = speaker.styles.find(s => s.name === 'あまあま');
             if (amaama) {
                 styleSelect.value = amaama.id;
-                        }
+            }
         };
 
         const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);

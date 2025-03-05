@@ -328,3 +328,29 @@ body {
         margin: 0 350px;
     }
 }
+
+/* Add specific CSS rules for Tsumugi's mouth positioning */
+.standing-character[data-character="tsumugi"] .character-mouth {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 3;
+}
+
+/* Ensure transformations work properly for Tsumugi */
+.standing-character.left[data-character="tsumugi"] .standing-character-base,
+.standing-character.left[data-character="tsumugi"] .standing-character-eyes,
+.standing-character.left[data-character="tsumugi"] .character-mouth {
+    transform: scaleX(-1);
+}
+
+/* Adjust Tsumugi's display size if needed */
+.standing-character[data-character="tsumugi"] .standing-character-base,
+.standing-character[data-character="tsumugi"] .standing-character-eyes {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
