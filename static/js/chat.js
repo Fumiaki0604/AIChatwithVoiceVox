@@ -1069,35 +1069,35 @@ document.addEventListener('DOMContentLoaded', async function () {
                 return;
             }
 
-            console.log("Executing blink");
+            console.log("Executing blink for Tsumugi");
             isBlinking = true;
             const startTime = new Date();
-            console.log("Eyes closed at:", startTime.toISOString());
+            console.log("Tsumugi eyes closed at:", startTime.toISOString());
 
             // 目を閉じる
             eyesImage.src = '/static/assets/tsumugi_eye_close.png';
 
-            // 0.8〜1.2秒後に目を開く
+            // 0.2秒後に目を開く
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/tsumugi_eye_open.png';
                     const endTime = new Date();
-                    console.log("Eyes opened at:", endTime.toISOString());
+                    console.log("Tsumugi eyes opened at:", endTime.toISOString());
                     isBlinking = false;
                 }
-            }, Math.random() * 400 + 800);
+            }, 200);
         }
 
         // 最初のまばたきは0.5〜2秒後
         const initialDelay = Math.random() * 1500 + 500;
         setTimeout(() => {
             blink();
-            // その後は2〜5秒おきにまばたき
+            // その後は2〜6秒おきにまばたき
             blinkIntervalId = setInterval(() => {
-                if (Math.random() < 0.7) { // 70%の確率でまばたき
+                if (Math.random() < 0.8) { // 80%の確率でまばたき
                     blink();
                 }
-            }, Math.random() * 3000 + 2000);
+            }, Math.random() * 4000 + 2000);
         }, initialDelay);
 
         // クリーンアップ関数
