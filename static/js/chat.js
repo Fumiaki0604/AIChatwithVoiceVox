@@ -732,7 +732,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 `;
                 // 瞬き処理を設定
                 setTimeout(() => {
-                    console.log("Setting up right character blinking for Tsumugi");                    setupBlinkingForTsumugi(rightCharacter);
+                    console.log("Setting up right character blinking for Tsumugi");
+                    setupBlinkingForTsumugi(rightCharacter);
                 }, 100);
             } else {
                 rightCharacter.innerHTML = '';
@@ -937,7 +938,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             // 目を閉じる
             eyesImage.src = '/static/assets/metan_eye_close.png';
 
-            // 目を閉じている時間を長くする（500ms）
+            // 目を閉じている時間を自然な長さに調整（200-300ms）
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/metan_eye_open.png';
@@ -945,7 +946,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                     console.log("Eyes opened at:", endTime.toISOString());
                     isBlinking = false;
                 }
-            }, 500); // 500msに延長
+            }, Math.random() * 100 + 200); // 200-300msに調整
+
         }
 
         // 最初のまばたきは0.5〜2秒後
@@ -956,7 +958,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             // その後は2〜5秒おきにまばたき
             blinkIntervalId = setInterval(() => {
                 if (Math.random() < 0.7) { // 70%の確率でまばたき
-                     blink();
+                    blink();
                 }
             }, Math.random() * 3000 + 2000);
         }, initialDelay);
@@ -1009,14 +1011,15 @@ document.addEventListener('DOMContentLoaded', async function () {
             // 目を閉じる
             eyesImage.src = '/static/assets/hau_close_eyes.png';
 
-            // 目を閉じている時間を長くする（500ms）
+            // 目を閉じている時間を自然な長さに調整（200-300ms）
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/hau_open_eyes.png';
                     console.log("Hau eyes opened at:", new Date().toISOString());
                     isBlinking = false;
                 }
-            }, 500); // 500msに延長
+            }, Math.random() * 100 + 200); // 200-300msに調整
+
         }
 
         // 最初のまばたきは0.5〜2秒後
@@ -1081,14 +1084,15 @@ document.addEventListener('DOMContentLoaded', async function () {
             // 目を閉じる
             eyesImage.src = '/static/assets/tsumugi_eye_close.png';
 
-            // 目を閉じている時間を長くする（800ms）
+            // 目を閉じている時間を自然な長さに調整（200-300ms）
             setTimeout(() => {
                 if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
                     eyesImage.src = '/static/assets/tsumugi_eye_open.png';
                     console.log("Tsumugi eyes opened at:", new Date().toISOString());
                     isBlinking = false;
                 }
-            }, 800); // 800msに延長
+            }, Math.random() * 100 + 200); // 200-300msに調整
+
         }
 
         console.log("Starting blinking animation for Tsumugi");
