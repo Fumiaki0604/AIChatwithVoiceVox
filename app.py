@@ -56,39 +56,61 @@ def chat():
         speaker_a = data.get('speaker_a')
         speaker_b = data.get('speaker_b')
 
+        # 新しいAPIフォーマットのサポート追加
+        speaker_id = data.get('speaker_id')
+        history = data.get('history', [])
+
         # 必要なパラメータの検証
         if not user_message:
             return jsonify({'error': 'No message provided'}), 400
-        if not speaker_a or not speaker_b:
-            return jsonify({'error': 'Both speaker_a and speaker_b must be specified'}), 400
 
-        # デバッグログの追加
-        logger.debug(f"Request data - message: {user_message}, speaker_a: {speaker_a}, speaker_b: {speaker_b}")
+        # 旧APIと新APIの両方をサポート
+        if speaker_id:
+            # 新しいAPIフォーマット
+            logger.debug(f"New API format - message: {user_message}, speaker_id: {speaker_id}")
 
-        # Get conversation history from session
-        conversation_history = session.get('conversation_history', [])
+            # Get conversation history from session or request
+            conversation_history = history if history else session.get('conversation_history', [])
 
-        # Get response for speaker A
-        response_a = get_chat_response(user_message, conversation_history, speaker_a)
-        logger.debug(f"Speaker A ({speaker_a}) response: {response_a}")
+            # Get response for speaker
+            response = get_chat_response(user_message, conversation_history, speaker_id)
+            logger.debug(f"Speaker ({speaker_id}) response: {response}")
 
-        # 話者Aの応答を履歴に追加
-        conversation_history.append({"role": "user", "content": user_message})
-        conversation_history.append({"role": "assistant", "content": response_a['content']})
+            # 応答を返す
+            return jsonify({
+                'content': response['content']
+            })
 
-        # Get response for speaker B
-        # 話者Bは会話の流れを自然に理解して反応する
-        response_b = get_chat_response(user_message, conversation_history, speaker_b)
-        logger.debug(f"Speaker B ({speaker_b}) response: {response_b}")
+        elif speaker_a and speaker_b:
+            # 従来のAPIフォーマット
+            logger.debug(f"Legacy API format - message: {user_message}, speaker_a: {speaker_a}, speaker_b: {speaker_b}")
 
-        # 最終的な会話履歴を保存
-        conversation_history.append({"role": "assistant", "content": response_b['content']})
-        session['conversation_history'] = conversation_history
+            # Get conversation history from session
+            conversation_history = session.get('conversation_history', [])
 
-        return jsonify({
-            'speaker_a': response_a['content'],
-            'speaker_b': response_b['content']
-        })
+            # Get response for speaker A
+            response_a = get_chat_response(user_message, conversation_history, speaker_a)
+            logger.debug(f"Speaker A ({speaker_a}) response: {response_a}")
+
+            # 話者Aの応答を履歴に追加
+            conversation_history.append({"role": "user", "content": user_message})
+            conversation_history.append({"role": "assistant", "content": response_a['content']})
+
+            # Get response for speaker B
+            # 話者Bは会話の流れを自然に理解して反応する
+            response_b = get_chat_response(user_message, conversation_history, speaker_b)
+            logger.debug(f"Speaker B ({speaker_b}) response: {response_b}")
+
+            # 最終的な会話履歴を保存
+            conversation_history.append({"role": "assistant", "content": response_b['content']})
+            session['conversation_history'] = conversation_history
+
+            return jsonify({
+                'speaker_a': response_a['content'],
+                'speaker_b': response_b['content']
+            })
+        else:
+            return jsonify({'error': 'Either speaker_id or both speaker_a and speaker_b must be specified'}), 400
 
     except Exception as e:
         logger.error(f"Error in chat endpoint: {str(e)}")

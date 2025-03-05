@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         updateStyles(speakerASelect.value, styleASelect);
         updateStyles(speakerBSelect.value, styleBSelect);
 
-        // スタイル選択を「あまあま」に設定
+        //// スタイル選択を「あまあま」に設定
         const updateSpeakerStyle = (speaker, styleSelect) => {
             const amaama = speaker.styles.find(s => s.name === 'あまあま');
             if (amaama) {
@@ -782,66 +782,57 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     let conversationHistory = [];
 
-    // Send message to ChatGPT API
-    async function sendMessageToChatGPT(message, speaker) {
-        // Display loading message
-        const loadingMessage = addMessage('考え中...', speaker === 'A' ? 'ai-message-a' : 'ai-message-b');
+    // Send message to server
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        if (!message) return;
+
+        addMessage(message, 'user');
+        userInput.value = '';
 
         try {
             const response = await fetch('/chat', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     message: message,
-                    history: conversationHistory,
-                    speaker_id: speaker === 'A' ? speakerASelect.value : speakerBSelect.value
-                }),
+                    speaker_a: speakerASelect.value,
+                    speaker_b: speakerBSelect.value
+                })
             });
 
             const data = await response.json();
+            if (response.ok) {
+                // 話者Aのメッセージを追加して再生
+                const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
+                if (speakerAMessage) {
+                    await play(data.speaker_a, styleASelect.value, 'A');
+                }
 
-            if (data.error) {
-                throw new Error(data.error);
+                // 話者Bのメッセージを追加して再生（話者Aの再生後に遅延して実行）
+                const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
+                if (speakerBMessage) {
+                    setTimeout(async () => {
+                        await play(data.speaker_b, styleBSelect.value, 'B');
+                    }, data.speaker_a.length * 180);
+                }
+            } else {
+                addMessage('エラーが発生しました: ' + data.error, 'error');
             }
-
-            // Add new message to history
-            conversationHistory.push({ role: 'user', content: message });
-            conversationHistory.push({ role: 'assistant', content: data.content });
-
-            // Remove loading message
-            chatMessages.removeChild(loadingMessage);
-
-            // Display real response
-            addMessage(data.content, speaker === 'A' ? 'ai-message-a' : 'ai-message-b');
         } catch (error) {
-            console.error('Error sending message to ChatGPT:', error);
-            // Update loading message with error
-            loadingMessage.querySelector('.message-content').textContent = 'エラーが発生しました: ' + error.message;
+            console.error('Error in sendMessage:', error);
+            addMessage('通信エラーが発生しました', 'error');
         }
     }
 
-    sendButton.addEventListener('click', () => {
-        sendMessage();
-    });
-
-    userInput.addEventListener('keypress', (e) => {
+    sendButton.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             sendMessage();
         }
     });
-
-    async function sendMessage() {
-        const message = userInput.value.trim();
-        if (!message) return;
-
-        showUserMessage(message);
-        userInput.value = '';
-
-        // Send to both speakers
-        await sendMessageToChatGPT(message, 'A');
-    }
 
     // Setup blinking animation for Metan
     function setupBlinking(characterElement) {
@@ -852,8 +843,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
-        let isBlinking = false;
         let blinkIntervalId = null;
+        let isBlinking = false;
 
         // 既存のタイマーをクリーンアップ
         if (characterElement.cleanup) {
@@ -873,7 +864,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 return;
             }
 
-            console.log("Executing blink");
             isBlinking = true;
             const startTime = new Date();
             console.log("Eyes closed at:", startTime.toISOString());
@@ -923,8 +913,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
-        let isBlinking = false;
         let blinkIntervalId = null;
+        let isBlinking = false;
 
         // 既存のタイマーをクリーンアップ
         if (characterElement.cleanup) {
@@ -1077,8 +1067,24 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Add reset conversation button handler
     const resetButton = document.getElementById('reset-conversation');
     resetButton.addEventListener('click', async () => {
-        conversationHistory = [];
-        chatMessages.innerHTML = '';
-        addMessage('会話がリセットされました', 'system-message');
+        try {
+            const response = await fetch('/reset-conversation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                // Clear chat messages from the UI
+                chatMessages.innerHTML = '';
+                addMessage('会話履歴をリセットしました', 'system');
+            } else {
+                const data = await response.json();
+                addMessage('エラーが発生しました: ' + data.error, 'error');
+            }
+        } catch (error) {
+            addMessage('通信エラーが発生しました', 'error');
+        }
     });
 });
