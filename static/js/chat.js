@@ -59,7 +59,7 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
         }
     }
     // 雨晴はう用のリップシンク
-    else if ([8, 10].includes(parseInt(voicevox_id))) {  // 雨晴はうのボイスIDを指定
+    else if (parseInt(voicevox_id) === 10) {  // 雨晴はうのボイスID
         const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
         if (leftMouseElement && currentSpeaker === 'A') {
             if (totalSpectrum > prevSpec) {
@@ -87,7 +87,7 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
         }
     }
     // 春日部つむぎ用のリップシンク
-    else if ([47, 48, 49, 50].includes(parseInt(voicevox_id))) {  // 春日部つむぎのボイスID
+    else if (parseInt(voicevox_id) === 8) {  // 春日部つむぎのボイスID
         const leftMouseElement = document.querySelector('.standing-character.left[data-character="tsumugi"] .character-mouth');
         if (leftMouseElement && currentSpeaker === 'A') {
             if (totalSpectrum > prevSpec) {
