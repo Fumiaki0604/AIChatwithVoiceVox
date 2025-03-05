@@ -742,7 +742,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         speakerASelect.value = speakers.find(s => s.name === 'ずんだもん')?.speaker_uuid || speakers[0]?.speaker_uuid;
         speakerBSelect.value = speakers.find(s => s.name === '四国めたん')?.speaker_uuid || speakers[1]?.speaker_uuid;
 
-        // 初期スタイルの設定
+        //        // 初期スタイルの設定
         updateStyles(speakerASelect.value, styleASelect);
         updateStyles(speakerBSelect.value, styleBSelect);
 
