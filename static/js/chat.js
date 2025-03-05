@@ -86,6 +86,34 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
             }
         }
     }
+    // 春日部つむぎ用のリップシンク
+    else if ([47, 48, 49, 50].includes(parseInt(voicevox_id))) {  // 春日部つむぎのボイスIDを指定（適宜変更してください）
+        const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+        if (leftMouseElement && currentSpeaker === 'A') {
+            if (totalSpectrum > prevSpec) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close_middle.png')";
+            } else {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close.png')";
+            }
+        }
+
+        const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
+        if (rightMouseElement && currentSpeaker === 'B') {
+            if (totalSpectrum > prevSpec) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close_middle.png')";
+            } else {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close.png')";
+            }
+        }
+    }
 
     prevSpec = totalSpectrum;
 }
@@ -159,12 +187,14 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
             const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
             const rightMouseElement = document.querySelector('.standing-character.right .character-mouth');
 
-            // 四国めたんの場合
+            // キャラクター別の口の画像設定
             if (leftMouseElement && currentSpeaker === 'A') {
                 if (speakerASelect.value === '四国めたん') {
                     leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
                 } else if (speakerASelect.value === '雨晴はう') {
                     leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
+                } else if (speakerASelect.value === '春日部つむぎ') {
+                    leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close.png')";
                 }
             }
             if (rightMouseElement && currentSpeaker === 'B') {
@@ -172,6 +202,8 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
                     rightMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
                 } else if (speakerBSelect.value === '雨晴はう') {
                     rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
+                } else if (speakerBSelect.value === '春日部つむぎ') {
+                    rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close.png')";
                 }
             }
         };
@@ -328,6 +360,9 @@ function addMessage(text, type) {
             } else if (speakerA && speakerA.name === '雨晴はう') {
                 aiIcon.src = '/static/assets/hau_icon.png';
                 aiIcon.alt = '雨晴はう';
+            } else if (speakerA && speakerA.name === '春日部つむぎ') {
+                aiIcon.src = '/static/assets/tsumugi_icon.png';
+                aiIcon.alt = '春日部つむぎ';
             } else {
                 aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
                 aiIcon.alt = speakerA ? speakerA.name : 'Speaker A';
@@ -342,6 +377,9 @@ function addMessage(text, type) {
             } else if (speakerB && speakerB.name === '雨晴はう') {
                 aiIcon.src = '/static/assets/hau_icon.png';
                 aiIcon.alt = '雨晴はう';
+            } else if (speakerB && speakerB.name === '春日部つむぎ') {
+                aiIcon.src = '/static/assets/tsumugi_icon.png';
+                aiIcon.alt = '春日部つむぎ';
             } else {
                 aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
                 aiIcon.alt = speakerB ? speakerB.name : 'Speaker B';
@@ -568,6 +606,18 @@ document.addEventListener('DOMContentLoaded', async function () {
                     console.log("Setting up left character blinking for Hau");
                     setupBlinkingForHau(leftCharacter);
                 });
+            } else if (speakerA.name === '春日部つむぎ') {
+                leftCharacter.innerHTML = `
+                    <div class="character-container">
+                        <img class="standing-character-base" src="/static/assets/standing_tsumugi.png" alt="春日部つむぎ">
+                        <img class="standing-character-eyes" src="/static/assets/tsumugi_eye_open.png" alt="春日部つむぎ目">
+                        <div class="character-mouth" style="background-image: url('/static/assets/tsumugi_mouse_close.png')"></div>
+                    </div>
+                `;
+                Promise.resolve().then(() => {
+                    console.log("Setting up left character blinking for Tsumugi");
+                    setupBlinkingForTsumugi(leftCharacter);
+                });
             } else {
                 leftCharacter.innerHTML = '';
             }
@@ -599,6 +649,18 @@ document.addEventListener('DOMContentLoaded', async function () {
                 Promise.resolve().then(() => {
                     console.log("Setting up right character blinking for Hau");
                     setupBlinkingForHau(rightCharacter);
+                });
+            } else if (speakerB.name === '春日部つむぎ') {
+                rightCharacter.innerHTML = `
+                    <div class="character-container">
+                        <img class="standing-character-base" src="/static/assets/standing_tsumugi.png" alt="春日部つむぎ">
+                        <img class="standing-character-eyes" src="/static/assets/tsumugi_eye_open.png" alt="春日部つむぎ目">
+                        <div class="character-mouth" style="background-image: url('/static/assets/tsumugi_mouse_close.png')"></div>
+                    </div>
+                `;
+                Promise.resolve().then(() => {
+                    console.log("Setting up right character blinking for Tsumugi");
+                    setupBlinkingForTsumugi(rightCharacter);
                 });
             } else {
                 rightCharacter.innerHTML = '';
@@ -683,7 +745,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const amaama = speaker.styles.find(s => s.name === 'あまあま');
             if (amaama) {
                 styleSelect.value = amaama.id;
-            }
+                        }
         };
 
         const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
@@ -969,6 +1031,77 @@ document.addEventListener('DOMContentLoaded', async function () {
                 startBlinking();
             }
         });
+    }
+
+    // Add new function for Tsumugi's blinking
+    function setupBlinkingForTsumugi(characterElement) {
+        console.log("setupBlinkingForTsumugi called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
+        const eyesImage = characterElement.querySelector('.standing-character-eyes');
+        if (!eyesImage) {
+            console.log("No eyes image found, returning");
+            return;
+        }
+
+        let isBlinking = false;
+        let blinkIntervalId = null;
+
+        // 既存のタイマーをクリーンアップ
+        if (characterElement.cleanup) {
+            console.log("Cleaning up existing timers");
+            characterElement.cleanup();
+        }
+
+        function blink() {
+            if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
+                console.log("Eyes element not valid anymore, cleaning up");
+                characterElement.cleanup();
+                return;
+            }
+
+            if (isBlinking) {
+                console.log("Already blinking, skipping");
+                return;
+            }
+
+            console.log("Executing blink");
+            isBlinking = true;
+            const startTime = new Date();
+            console.log("Eyes closed at:", startTime.toISOString());
+
+            // 目を閉じる
+            eyesImage.src = '/static/assets/tsumugi_eye_close.png';
+
+            // 0.8〜1.2秒後に目を開く
+            setTimeout(() => {
+                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                    eyesImage.src = '/static/assets/tsumugi_eye_open.png';
+                    const endTime = new Date();
+                    console.log("Eyes opened at:", endTime.toISOString());
+                    isBlinking = false;
+                }
+            }, Math.random() * 400 + 800);
+        }
+
+        // 最初のまばたきは0.5〜2秒後
+        const initialDelay = Math.random() * 1500 + 500;
+        setTimeout(() => {
+            blink();
+            // その後は2〜5秒おきにまばたき
+            blinkIntervalId = setInterval(() => {
+                if (Math.random() < 0.7) { // 70%の確率でまばたき
+                    blink();
+                }
+            }, Math.random() * 3000 + 2000);
+        }, initialDelay);
+
+        // クリーンアップ関数
+        characterElement.cleanup = () => {
+            console.log("Cleaning up blink interval");
+            if (blinkIntervalId) {
+                clearInterval(blinkIntervalId);
+                blinkIntervalId = null;
+            }
+        };
     }
 
     // Add reset conversation button handler
