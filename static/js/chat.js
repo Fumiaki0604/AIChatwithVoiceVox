@@ -86,7 +86,7 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
             }
         }
     }
-    // 春日部つむぎ用のリップシンク
+    // 春日部つむぎ用のリップシンク部分を修正
     else if (parseInt(voicevox_id) === 8) {  // 春日部つむぎのボイスID
         const leftMouseElement = document.querySelector('.standing-character.left[data-character="tsumugi"] .character-mouth');
         if (leftMouseElement && currentSpeaker === 'A') {
@@ -782,6 +782,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 
 
+
+
     async function sendMessage() {
         const message = userInput.value.trim();
         if (!message) return;
@@ -1042,68 +1044,90 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Add new function for Tsumugi's blinking
     function setupBlinkingForTsumugi(characterElement) {
         console.log("setupBlinkingForTsumugi called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
-        const eyesImage = characterElement.querySelector('.standing-character-eyes');
-        if (!eyesImage) {
-            console.log("No eyes image found, returning");
-            return;
-        }
-
-        let isBlinking = false;
-        let blinkIntervalId = null;
 
         // 既存のタイマーをクリーンアップ
+        console.log("Cleaning up existing timers");
         if (characterElement.cleanup) {
-            console.log("Cleaning up existing timers");
             characterElement.cleanup();
         }
 
-        function blink() {
-            if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
-                console.log("Eyes element not valid anymore, cleaning up");
-                characterElement.cleanup();
+        const eyesElement = characterElement.querySelector('.standing-character-eyes');
+        if (!eyesElement) {
+            console.log("No eyes element found for Tsumugi");
+            return;
+        }
+
+        let blinkTimerId = null;
+        let blinkIntervalId = null;
+        let isBlinking = false;
+
+        function executeBlink() {
+            if (!eyesElement || !eyesElement.parentNode || !characterElement.contains(eyesElement)) {
+                console.log("Eyes element not valid anymore for Tsumugi, cleaning up");
+                if (characterElement.cleanup) characterElement.cleanup();
                 return;
             }
 
             if (isBlinking) {
-                console.log("Already blinking, skipping");
+                console.log("Tsumugi already blinking, skipping");
                 return;
             }
 
-            console.log("Executing blink for Tsumugi");
             isBlinking = true;
-            const startTime = new Date();
-            console.log("Tsumugi eyes closed at:", startTime.toISOString());
+            console.log("Executing blink for Tsumugi at:", new Date().toISOString());
 
             // 目を閉じる
-            eyesImage.src = '/static/assets/tsumugi_eye_close.png';
+            eyesElement.src = '/static/assets/tsumugi_eye_close.png';
 
             // 0.2秒後に目を開く
             setTimeout(() => {
-                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
-                    eyesImage.src = '/static/assets/tsumugi_eye_open.png';
-                    const endTime = new Date();
-                    console.log("Tsumugi eyes opened at:", endTime.toISOString());
+                if (eyesElement && eyesElement.parentNode && characterElement.contains(eyesElement)) {
+                    eyesElement.src = '/static/assets/tsumugi_eye_open.png';
+                    console.log("Tsumugi eyes opened at:", new Date().toISOString());
                     isBlinking = false;
                 }
             }, 200);
         }
 
-        // 最初のまばたきは0.5〜2秒後
+        // 最初のまばたきを0.5〜2秒後に設定
         const initialDelay = Math.random() * 1500 + 500;
-        setTimeout(() => {
-            blink();
-            // その後は2〜6秒おきにまばたき
-            blinkIntervalId = setInterval(() => {
-                if (Math.random() < 0.8) { // 80%の確率でまばたき
-                    blink();
-                }
-            }, Math.random() * 4000 + 2000);
-        }, initialDelay);
+        console.log("Setting initial blink delay to", initialDelay, "ms");
+
+        // 遅延実行を保証するためにRAFを使用
+        requestAnimationFrame(() => {
+            if (!eyesElement || !eyesElement.parentNode || !characterElement.contains(eyesElement)) {
+                console.log("Elements not ready after RAF, skipping");
+                return;
+            }
+
+            console.log("Starting blinking animation after RAF");
+
+            // 最初のまばたき
+            blinkTimerId = setTimeout(() => {
+                console.log("Starting blink animation");
+                executeBlink();
+
+                // 定期的なまばたきの設定
+                const blinkInterval = Math.random() * 2000 + 3000; // 3-5秒
+                console.log("Setting blink interval to", blinkInterval, "ms");
+
+                blinkIntervalId = setInterval(() => {
+                    if (Math.random() < 0.8) { // 80%の確率でまばたき
+                        executeBlink();
+                    }
+                }, blinkInterval);
+            }, initialDelay);
+        });
 
         // クリーンアップ関数
         characterElement.cleanup = () => {
-            console.log("Cleaning up blink interval");
+            console.log("Cleanup called");
+            if (blinkTimerId) {
+                clearTimeout(blinkTimerId);
+                blinkTimerId = null;
+            }
             if (blinkIntervalId) {
+                console.log("Cleaning up blink interval");
                 clearInterval(blinkIntervalId);
                 blinkIntervalId = null;
             }
