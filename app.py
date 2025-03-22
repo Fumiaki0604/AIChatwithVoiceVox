@@ -106,7 +106,7 @@ def chat():
             
             pattern_choice = random.random()
             
-            # 選ばれたキャラクターの名前を取得
+            # 選ばれたキャラクターの名前と呼称を取得
             speaker_a_profile = None
             speaker_b_profile = None
             
@@ -121,32 +121,68 @@ def chat():
                 logger.error(f"Error getting character profiles: {str(e)}")
             
             speaker_a_name = speaker_a_profile['name'] if speaker_a_profile else "話者A"
+            speaker_b_name = speaker_b_profile['name'] if speaker_b_profile else "話者B"
+            
+            # キャラクター間の呼称マッピングを定義
+            character_nicknames = {
+                # WhiteCUL から見た他のキャラクターの呼び方
+                ("WhiteCUL", "四国めたん"): "めたんちゃん",
+                ("WhiteCUL", "春日部つむぎ"): "つむぎ",
+                ("WhiteCUL", "雨晴はう"): "はうちゃん",
+                
+                # 四国めたん から見た他のキャラクターの呼び方
+                ("四国めたん", "春日部つむぎ"): "つむぎさん",
+                ("四国めたん", "雨晴はう"): "はうさん",
+                ("四国めたん", "WhiteCUL"): "雪さん",
+                
+                # 春日部つむぎ から見た他のキャラクターの呼び方
+                ("春日部つむぎ", "四国めたん"): "めたん先輩",
+                ("春日部つむぎ", "雨晴はう"): "はうさん",
+                ("春日部つむぎ", "WhiteCUL"): "雪さん",
+                
+                # 雨晴はう から見た他のキャラクターの呼び方
+                ("雨晴はう", "四国めたん"): "めたんさん",
+                ("雨晴はう", "春日部つむぎ"): "はうちゃん",
+                ("雨晴はう", "WhiteCUL"): "ゆきさん",
+            }
+            
+            # 適切な呼称を取得
+            nickname_key = (speaker_b_name, speaker_a_name)
+            speaker_a_nickname = character_nicknames.get(nickname_key, speaker_a_name)
             
             if pattern_choice < 0.3:  # パターンA(30%): 同調
                 logger.debug(f"Using pattern A: Speaker B agrees with Speaker A")
-                instruction = f"""あなたは{speaker_a_name}の意見に同意または肯定する返答をしてください。
-                例: 「{speaker_a_name}の意見に賛成！」「{speaker_a_name}の考え方はいいね！」など
-                {speaker_a_name}の発言を引用しつつ、それに賛同する形で返答してください。"""
+                instruction = f"""あなたは{speaker_a_nickname}の意見に同意または肯定する返答をしてください。
+                他のキャラクターとの会話では、{speaker_a_name}のことを「{speaker_a_nickname}」と呼んでください。
+                例: 「{speaker_a_nickname}の意見に賛成！」「{speaker_a_nickname}の考え方はいいね！」など
+                {speaker_a_nickname}の発言を引用しつつ、それに賛同する形で返答してください。"""
                 
                 response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
             
             elif pattern_choice < 0.4:  # パターンB(10%): 反対
                 logger.debug(f"Using pattern B: Speaker B disagrees with Speaker A")
-                instruction = f"""あなたは{speaker_a_name}の意見に反対または異なる見解を述べる返答をしてください。
-                例: 「{speaker_a_name}と私の考えはちょっと違うかな～」「いや、私は～だと思うよ」など
-                {speaker_a_name}の発言を引用しつつ、それとは異なる視点や考えを丁寧に述べてください。"""
+                instruction = f"""あなたは{speaker_a_nickname}の意見に反対または異なる見解を述べる返答をしてください。
+                他のキャラクターとの会話では、{speaker_a_name}のことを「{speaker_a_nickname}」と呼んでください。
+                例: 「{speaker_a_nickname}と私の考えはちょっと違うかな～」「いや、私は～だと思うよ」など
+                {speaker_a_nickname}の発言を引用しつつ、それとは異なる視点や考えを丁寧に述べてください。"""
                 
                 response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
             
             elif pattern_choice < 0.8:  # パターンC(40%): 独立した返答
                 logger.debug(f"Using pattern C: Speaker B gives independent response")
-                response_b = get_chat_response(user_message, conversation_history, speaker_b)
+                instruction = f"""あなたはユーザーの質問に独立して返答してください。
+                他のキャラクターとの会話が発生する場合は、{speaker_a_name}のことを「{speaker_a_nickname}」と呼んでください。
+                ユーザーの質問に直接答えることを主な目的としてください。"""
+                
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
             
             else:  # パターンD(20%): 別の話題を提供
                 logger.debug(f"Using pattern D: Speaker B introduces a new topic")
-                instruction = """あなたはユーザーの質問とは少し離れた別の話題を提供してください。
+                instruction = f"""あなたはユーザーの質問とは少し離れた別の話題を提供してください。
+                他のキャラクターとの会話では、{speaker_a_name}のことを「{speaker_a_nickname}」と呼んでください。
                 例: 「ところでさ、～ってどう思う？」「その話もいいけど、私も最近思うことがあってさ」など
-                自然な会話の流れを損なわない程度に、新しい話題や視点を導入してください。"""
+                自然な会話の流れを損なわない程度に、新しい話題や視点を導入してください。
+                可能であれば、{speaker_a_nickname}に質問するような形で新しい話題を振ってみるのも良いでしょう。"""
                 
                 response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
             
