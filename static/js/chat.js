@@ -363,6 +363,9 @@ function addMessage(text, type) {
             } else if (speakerA && speakerA.name === '春日部つむぎ') {
                 aiIcon.src = '/static/assets/tsumugi_icon.png';
                 aiIcon.alt = '春日部つむぎ';
+            } else if (speakerA && speakerA.name === 'WhiteCUL') {
+                aiIcon.src = '/static/assets/whiteCul_standing.png';
+                aiIcon.alt = 'WhiteCUL';
             } else {
                 aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
                 aiIcon.alt = speakerA ? speakerA.name : 'Speaker A';
@@ -380,6 +383,9 @@ function addMessage(text, type) {
             } else if (speakerB && speakerB.name === '春日部つむぎ') {
                 aiIcon.src = '/static/assets/tsumugi_icon.png';
                 aiIcon.alt = '春日部つむぎ';
+            } else if (speakerB && speakerB.name === 'WhiteCUL') {
+                aiIcon.src = '/static/assets/whiteCul_standing.png';
+                aiIcon.alt = 'WhiteCUL';
             } else {
                 aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
                 aiIcon.alt = speakerB ? speakerB.name : 'Speaker B';
@@ -571,7 +577,8 @@ function preloadImages() {
         '/static/assets/tsumugi_mouse_close.png',
         '/static/assets/standing_metan.png',
         '/static/assets/hau_standing.png',
-        '/static/assets/standing_tsumugi.png'
+        '/static/assets/standing_tsumugi.png',
+        '/static/assets/whiteCul_standing.png'
     ];
 
     // すべての画像をプリロード
@@ -685,6 +692,14 @@ document.addEventListener('DOMContentLoaded', async function () {
                     console.log("Setting up left character blinking for Tsumugi");
                     setupBlinkingForTsumugi(leftCharacter);
                 }, 100);
+            } else if (speakerA.name === 'WhiteCUL') {
+                leftCharacter.setAttribute('data-character', 'whitecul');
+                leftCharacter.innerHTML = `
+                    <div class="character-container">
+                        <img class="standing-character-base" src="/static/assets/whiteCul_standing.png" alt="WhiteCUL">
+                    </div>
+                `;
+                // 瞬き処理はあとで実装するため、ここでは追加しない
             } else {
                 leftCharacter.innerHTML = '';
             }
@@ -735,6 +750,14 @@ document.addEventListener('DOMContentLoaded', async function () {
                     console.log("Setting up right character blinking for Tsumugi");
                     setupBlinkingForTsumugi(rightCharacter);
                 }, 100);
+            } else if (speakerB.name === 'WhiteCUL') {
+                rightCharacter.setAttribute('data-character', 'whitecul');
+                rightCharacter.innerHTML = `
+                    <div class="character-container">
+                        <img class="standing-character-base" src="/static/assets/whiteCul_standing.png" alt="WhiteCUL">
+                    </div>
+                `;
+                // 瞬き処理はあとで実装するため、ここでは追加しない
             } else {
                 rightCharacter.innerHTML = '';
             }
