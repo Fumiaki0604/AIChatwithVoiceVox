@@ -207,7 +207,7 @@ def get_current_datetime_jp():
     }
     return date_info
 
-def get_chat_response(message, conversation_history=None, speaker_id=None):
+def get_chat_response(message, conversation_history=None, speaker_id=None, additional_instruction=None):
     try:
         if conversation_history is None:
             conversation_history = []
@@ -230,6 +230,10 @@ def get_chat_response(message, conversation_history=None, speaker_id=None):
         profile = CHARACTER_PROFILES[speaker_id]
         logger.debug(f"Using profile for character: {profile['name']}")
 
+        # 追加指示がある場合はログに記録
+        if additional_instruction:
+            logger.debug(f"Additional instruction provided for {profile['name']}: {additional_instruction}")
+
         # システムメッセージの構築
         base_system_message = f"""あなたは{profile['name']}として会話するAIアシスタントです。
 現在は{current_datetime['full']}です{holiday_info}。
@@ -243,6 +247,13 @@ def get_chat_response(message, conversation_history=None, speaker_id=None):
 
 会話の中では、他の参加者の発言を自然に聞いて反応してください。
 時間帯に応じた適切な受け答えを心がけてください。"""
+
+        # 追加指示がある場合は追加
+        if additional_instruction:
+            base_system_message += f"""
+
+追加指示:
+{additional_instruction}"""
 
         # メッセージ配列の構築
         messages = [{"role": "system", "content": base_system_message}]

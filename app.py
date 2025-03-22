@@ -97,8 +97,59 @@ def chat():
             conversation_history.append({"role": "assistant", "content": response_a['content']})
 
             # Get response for speaker B
-            # 話者Bは会話の流れを自然に理解して反応する
-            response_b = get_chat_response(user_message, conversation_history, speaker_b)
+            # パターンに基づいて指示を変更する
+            # パターンA(30%): 話者Aの回答に同調
+            # パターンB(10%): 話者Aの回答に反対
+            # パターンC(40%): ユーザーの問いかけに独立して返答
+            # パターンD(20%): 別の話題を提供
+            import random
+            
+            pattern_choice = random.random()
+            
+            # 選ばれたキャラクターの名前を取得
+            speaker_a_profile = None
+            speaker_b_profile = None
+            
+            try:
+                from utils.openai_helper import CHARACTER_PROFILES
+                for uuid, profile in CHARACTER_PROFILES.items():
+                    if uuid == speaker_a:
+                        speaker_a_profile = profile
+                    if uuid == speaker_b:
+                        speaker_b_profile = profile
+            except Exception as e:
+                logger.error(f"Error getting character profiles: {str(e)}")
+            
+            speaker_a_name = speaker_a_profile['name'] if speaker_a_profile else "話者A"
+            
+            if pattern_choice < 0.3:  # パターンA(30%): 同調
+                logger.debug(f"Using pattern A: Speaker B agrees with Speaker A")
+                instruction = f"""あなたは{speaker_a_name}の意見に同意または肯定する返答をしてください。
+                例: 「{speaker_a_name}の意見に賛成！」「{speaker_a_name}の考え方はいいね！」など
+                {speaker_a_name}の発言を引用しつつ、それに賛同する形で返答してください。"""
+                
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
+            
+            elif pattern_choice < 0.4:  # パターンB(10%): 反対
+                logger.debug(f"Using pattern B: Speaker B disagrees with Speaker A")
+                instruction = f"""あなたは{speaker_a_name}の意見に反対または異なる見解を述べる返答をしてください。
+                例: 「{speaker_a_name}と私の考えはちょっと違うかな～」「いや、私は～だと思うよ」など
+                {speaker_a_name}の発言を引用しつつ、それとは異なる視点や考えを丁寧に述べてください。"""
+                
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
+            
+            elif pattern_choice < 0.8:  # パターンC(40%): 独立した返答
+                logger.debug(f"Using pattern C: Speaker B gives independent response")
+                response_b = get_chat_response(user_message, conversation_history, speaker_b)
+            
+            else:  # パターンD(20%): 別の話題を提供
+                logger.debug(f"Using pattern D: Speaker B introduces a new topic")
+                instruction = """あなたはユーザーの質問とは少し離れた別の話題を提供してください。
+                例: 「ところでさ、～ってどう思う？」「その話もいいけど、私も最近思うことがあってさ」など
+                自然な会話の流れを損なわない程度に、新しい話題や視点を導入してください。"""
+                
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
+            
             logger.debug(f"Speaker B ({speaker_b}) response: {response_b}")
 
             # 最終的な会話履歴を保存
