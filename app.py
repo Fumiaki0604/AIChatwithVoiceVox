@@ -72,8 +72,17 @@ def chat():
             # Get conversation history from session or request
             conversation_history = history if history else session.get('conversation_history', [])
 
+            # 二人称の設定を追加
+            additional_instruction = """
+            重要：あなたがどのキャラクターであるかに応じて、ユーザーへの呼びかけ方を必ず守ってください：
+            - 四国めたんの場合は「アンタ」
+            - 雨晴はうの場合は「あなた」
+            - 春日部つむぎの場合は「きみ」
+            - WhiteCULの場合は「あなた」
+            """
+            
             # Get response for speaker
-            response = get_chat_response(user_message, conversation_history, speaker_id)
+            response = get_chat_response(user_message, conversation_history, speaker_id, additional_instruction=additional_instruction)
             logger.debug(f"Speaker ({speaker_id}) response: {response}")
 
             # 応答を返す
@@ -155,7 +164,13 @@ def chat():
                 instruction = f"""あなたは{speaker_a_nickname}の意見に同意または肯定する返答をしてください。
                 他のキャラクターとの会話では、{speaker_a_name}のことを「{speaker_a_nickname}」と呼んでください。
                 例: 「{speaker_a_nickname}の意見に賛成！」「{speaker_a_nickname}の考え方はいいね！」など
-                {speaker_a_nickname}の発言を引用しつつ、それに賛同する形で返答してください。"""
+                {speaker_a_nickname}の発言を引用しつつ、それに賛同する形で返答してください。
+                
+                重要：あなたがどのキャラクターであるかに応じて、ユーザーへの呼びかけ方を必ず守ってください：
+                - 四国めたんの場合は「アンタ」
+                - 雨晴はうの場合は「あなた」
+                - 春日部つむぎの場合は「きみ」
+                - WhiteCULの場合は「あなた」"""
                 
                 response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
             
@@ -164,7 +179,13 @@ def chat():
                 instruction = f"""あなたは{speaker_a_nickname}の意見に反対または異なる見解を述べる返答をしてください。
                 他のキャラクターとの会話では、{speaker_a_name}のことを「{speaker_a_nickname}」と呼んでください。
                 例: 「{speaker_a_nickname}と私の考えはちょっと違うかな～」「いや、私は～だと思うよ」など
-                {speaker_a_nickname}の発言を引用しつつ、それとは異なる視点や考えを丁寧に述べてください。"""
+                {speaker_a_nickname}の発言を引用しつつ、それとは異なる視点や考えを丁寧に述べてください。
+                
+                重要：あなたがどのキャラクターであるかに応じて、ユーザーへの呼びかけ方を必ず守ってください：
+                - 四国めたんの場合は「アンタ」
+                - 雨晴はうの場合は「あなた」
+                - 春日部つむぎの場合は「きみ」
+                - WhiteCULの場合は「あなた」"""
                 
                 response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
             
@@ -172,7 +193,13 @@ def chat():
                 logger.debug(f"Using pattern C: Speaker B gives independent response")
                 instruction = f"""あなたはユーザーの質問に独立して返答してください。
                 他のキャラクターとの会話が発生する場合は、{speaker_a_name}のことを「{speaker_a_nickname}」と呼んでください。
-                ユーザーの質問に直接答えることを主な目的としてください。"""
+                ユーザーの質問に直接答えることを主な目的としてください。
+                
+                重要：あなたがどのキャラクターであるかに応じて、ユーザーへの呼びかけ方を必ず守ってください：
+                - 四国めたんの場合は「アンタ」
+                - 雨晴はうの場合は「あなた」
+                - 春日部つむぎの場合は「きみ」
+                - WhiteCULの場合は「あなた」"""
                 
                 response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
             
@@ -182,7 +209,13 @@ def chat():
                 他のキャラクターとの会話では、{speaker_a_name}のことを「{speaker_a_nickname}」と呼んでください。
                 例: 「ところでさ、～ってどう思う？」「その話もいいけど、私も最近思うことがあってさ」など
                 自然な会話の流れを損なわない程度に、新しい話題や視点を導入してください。
-                可能であれば、{speaker_a_nickname}に質問するような形で新しい話題を振ってみるのも良いでしょう。"""
+                可能であれば、{speaker_a_nickname}に質問するような形で新しい話題を振ってみるのも良いでしょう。
+                
+                重要：あなたがどのキャラクターであるかに応じて、ユーザーへの呼びかけ方を必ず守ってください：
+                - 四国めたんの場合は「アンタ」
+                - 雨晴はうの場合は「あなた」
+                - 春日部つむぎの場合は「きみ」
+                - WhiteCULの場合は「あなた」"""
                 
                 response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
             
