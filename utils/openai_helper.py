@@ -111,7 +111,7 @@ CHARACTER_PROFILES = {
     12. 冗談めかした言い方で相手を励ましたりする"""
     },
     # WhiteCUL: style 23 = ノーマル、24 = たのしい、25 = かなしい、26 = びえーん
-    "4f5b5c61-aca7-4cbc-abe1-c199ae6ca537": {
+    "67d5d8da-acd7-4207-bb10-b5542d3a663b": {
         "name": "WhiteCUL",
         "description": """
     - 愛称：雪さん（Yuki-san）
