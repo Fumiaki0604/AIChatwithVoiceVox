@@ -697,9 +697,14 @@ document.addEventListener('DOMContentLoaded', async function () {
                 leftCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/whiteCul_standing.png" alt="WhiteCUL">
+                        <img class="standing-character-eyes" src="/static/assets/whiteCul_eye_open.png" alt="WhiteCUL目">
                     </div>
                 `;
-                // 瞬き処理はあとで実装するため、ここでは追加しない
+                // 瞬き処理を設定
+                setTimeout(() => {
+                    console.log("Setting up left character blinking for WhiteCUL");
+                    setupBlinkingForWhiteCUL(leftCharacter);
+                }, 100);
             } else {
                 leftCharacter.innerHTML = '';
             }
@@ -755,9 +760,14 @@ document.addEventListener('DOMContentLoaded', async function () {
                 rightCharacter.innerHTML = `
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/whiteCul_standing.png" alt="WhiteCUL">
+                        <img class="standing-character-eyes" src="/static/assets/whiteCul_eye_open.png" alt="WhiteCUL目">
                     </div>
                 `;
-                // 瞬き処理はあとで実装するため、ここでは追加しない
+                // 瞬き処理を設定
+                setTimeout(() => {
+                    console.log("Setting up right character blinking for WhiteCUL");
+                    setupBlinkingForWhiteCUL(rightCharacter);
+                }, 100);
             } else {
                 rightCharacter.innerHTML = '';
             }
@@ -1147,6 +1157,78 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
             if (blinkIntervalId) {
                 console.log("Cleaning up blink interval");
+                clearInterval(blinkIntervalId);
+                blinkIntervalId = null;
+            }
+        };
+    }
+
+    // WhiteCUL用の瞬き処理
+    function setupBlinkingForWhiteCUL(characterElement) {
+        console.log("setupBlinkingForWhiteCUL called for", characterElement.classList.contains('left') ? 'left' : 'right', "character");
+
+        // 既存のタイマーをクリーンアップ
+        if (characterElement.cleanup) {
+            console.log("Cleaning up existing timers for WhiteCUL");
+            characterElement.cleanup();
+        }
+
+        const eyesImage = characterElement.querySelector('.standing-character-eyes');
+        if (!eyesImage) {
+            console.log("No eyes image found for WhiteCUL, returning");
+            return;
+        }
+
+        let blinkIntervalId = null;
+        let blinkTimerId = null;
+        let isBlinking = false;
+
+        // WhiteCULの目を閉じる/開く処理
+        function blink() {
+            if (!eyesImage || !eyesImage.parentNode || !characterElement.contains(eyesImage)) {
+                console.log("Eyes element not valid anymore for WhiteCUL, cleaning up");
+                if (characterElement.cleanup) characterElement.cleanup();
+                return;
+            }
+
+            if (isBlinking) {
+                console.log("WhiteCUL already blinking, skipping");
+                return;
+            }
+
+            isBlinking = true;
+            console.log("WhiteCUL eyes closed at:", new Date().toISOString());
+
+            // 目を閉じる
+            eyesImage.src = '/static/assets/whiteCul_eye_close.png';
+
+            // 目を閉じている時間を自然な長さに調整（200-300ms）
+            setTimeout(() => {
+                if (eyesImage && eyesImage.parentNode && characterElement.contains(eyesImage)) {
+                    eyesImage.src = '/static/assets/whiteCul_eye_open.png';
+                    console.log("WhiteCUL eyes opened at:", new Date().toISOString());
+                    isBlinking = false;
+                }
+            }, Math.random() * 100 + 200); // 200-300msに調整
+        }
+
+        // 最初のまばたきは0.5〜2秒後
+        const initialDelay = Math.random() * 1500 + 500;
+        setTimeout(() => {
+            console.log("Starting first blink for WhiteCUL");
+            blink();
+            // その後は2〜5秒おきにまばたき
+            blinkIntervalId = setInterval(() => {
+                if (Math.random() < 0.7) { // 70%の確率でまばたき
+                    blink();
+                }
+            }, Math.random() * 3000 + 2000);
+        }, initialDelay);
+
+        // クリーンアップ関数
+        characterElement.cleanup = () => {
+            console.log("Cleaning up WhiteCUL blink interval");
+            if (blinkIntervalId) {
                 clearInterval(blinkIntervalId);
                 blinkIntervalId = null;
             }
