@@ -396,7 +396,7 @@ function addMessage(text, type) {
                 aiIcon.src = '/static/assets/tsumugi_icon.png';
                 aiIcon.alt = '春日部つむぎ';
             } else if (speakerA && speakerA.name === 'WhiteCUL') {
-                aiIcon.src = '/static/assets/whiteCul_standing.png';
+                aiIcon.src = '/static/assets/whiteCul_icon.png';
                 aiIcon.alt = 'WhiteCUL';
             } else {
                 aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256.png';
@@ -416,7 +416,7 @@ function addMessage(text, type) {
                 aiIcon.src = '/static/assets/tsumugi_icon.png';
                 aiIcon.alt = '春日部つむぎ';
             } else if (speakerB && speakerB.name === 'WhiteCUL') {
-                aiIcon.src = '/static/assets/whiteCul_standing.png';
+                aiIcon.src = '/static/assets/whiteCul_icon.png';
                 aiIcon.alt = 'WhiteCUL';
             } else {
                 aiIcon.src = 'https://raw.githubusercontent.com/VOICEVOX/voicevox/main/assets/icon/256x256_dark.png';
@@ -610,7 +610,14 @@ function preloadImages() {
         '/static/assets/standing_metan.png',
         '/static/assets/hau_standing.png',
         '/static/assets/standing_tsumugi.png',
-        '/static/assets/whiteCul_standing.png'
+        '/static/assets/whiteCul_standing.png',
+        '/static/assets/whiteCul_eye_open.png',
+        '/static/assets/whiteCul_eye_close.png',
+        '/static/assets/whiteCul_mouse_open.png',
+        '/static/assets/whiteCul_mouse_open_middle.png',
+        '/static/assets/whiteCul_mouse_close_middle.png',
+        '/static/assets/whiteCul_mouse_close.png',
+        '/static/assets/whiteCul_icon.png'
     ];
 
     // すべての画像をプリロード
