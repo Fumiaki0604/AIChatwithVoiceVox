@@ -114,6 +114,34 @@ function syncLip(spectrums, voicevox_id, currentSpeaker) {
             }
         }
     }
+    // WhiteCUL用のリップシンク
+    else if ([23, 24, 25, 26].includes(parseInt(voicevox_id))) {  // WhiteCULのボイスID
+        const leftMouseElement = document.querySelector('.standing-character.left[data-character="whitecul"] .character-mouth');
+        if (leftMouseElement && currentSpeaker === 'A') {
+            if (totalSpectrum > prevSpec) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_close_middle.png')";
+            } else {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_close.png')";
+            }
+        }
+
+        const rightMouseElement = document.querySelector('.standing-character.right[data-character="whitecul"] .character-mouth');
+        if (rightMouseElement && currentSpeaker === 'B') {
+            if (totalSpectrum > prevSpec) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_close_middle.png')";
+            } else {
+                rightMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_close.png')";
+            }
+        }
+    }
 
     prevSpec = totalSpectrum;
 }
@@ -195,6 +223,8 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
                     leftMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
                 } else if (speakerASelect.value === '春日部つむぎ') {
                     leftMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close.png')";
+                } else if (speakerASelect.value === 'WhiteCUL') {
+                    leftMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_close.png')";
                 }
             }
             if (rightMouseElement && currentSpeaker === 'B') {
@@ -204,6 +234,8 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
                     rightMouseElement.style.backgroundImage = "url('/static/assets/hau_mouse_close.png')";
                 } else if (speakerBSelect.value === '春日部つむぎ') {
                     rightMouseElement.style.backgroundImage = "url('/static/assets/tsumugi_mouse_close.png')";
+                } else if (speakerBSelect.value === 'WhiteCUL') {
+                    rightMouseElement.style.backgroundImage = "url('/static/assets/whiteCul_mouse_close.png')";
                 }
             }
         };
@@ -698,6 +730,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/whiteCul_standing.png" alt="WhiteCUL">
                         <img class="standing-character-eyes" src="/static/assets/whiteCul_eye_open.png" alt="WhiteCUL目">
+                        <div class="character-mouth" style="background-image: url('/static/assets/whiteCul_mouse_close.png')"></div>
                     </div>
                 `;
                 // 瞬き処理を設定
@@ -761,6 +794,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     <div class="character-container">
                         <img class="standing-character-base" src="/static/assets/whiteCul_standing.png" alt="WhiteCUL">
                         <img class="standing-character-eyes" src="/static/assets/whiteCul_eye_open.png" alt="WhiteCUL目">
+                        <div class="character-mouth" style="background-image: url('/static/assets/whiteCul_mouse_close.png')"></div>
                     </div>
                 `;
                 // 瞬き処理を設定
