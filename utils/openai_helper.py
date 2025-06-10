@@ -1,6 +1,6 @@
 import os
 import logging
-from openai import OpenAI
+import openai
 from datetime import datetime
 import pytz
 import jpholiday
@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-openai = OpenAI(api_key=OPENAI_API_KEY)
+openai.api_key = OPENAI_API_KEY
 
 # キャラクタープロフィールの定義（VoiceVox話者IDに基づく）
 CHARACTER_PROFILES = {
@@ -271,14 +271,14 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
         # デバッグログ：OpenAIに送信するメッセージを出力
         logger.debug(f"Messages being sent to OpenAI: {messages}")
 
-        response = openai.chat.completions.create(
-            model="gpt-4o",
+        response = openai.ChatCompletion.create(
+            model="gpt-4.1",
             messages=messages,
             max_tokens=500,
             temperature=0.7
         )
 
-        response_content = response.choices[0].message.content
+        response_content = response.choices[0].message["content"]
         logger.debug(f"Response from OpenAI: {response_content}")
 
         return {
