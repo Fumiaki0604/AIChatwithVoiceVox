@@ -272,7 +272,7 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
         logger.debug(f"Messages being sent to OpenAI: {messages}")
 
         response = openai.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=messages,
             max_tokens=500,
             temperature=0.7

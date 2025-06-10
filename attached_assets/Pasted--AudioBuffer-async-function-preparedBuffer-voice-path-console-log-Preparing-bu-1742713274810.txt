@@ -1,0 +1,46 @@
+/* 音声データをAudioBufferに変換 */
+async function preparedBuffer(voice_path) {
+    console.log("Preparing buffer for voice path:", voice_path);
+    const ctx = new AudioContext();
+    const res = await fetch(voice_path);
+    if (!res.ok) {
+        throw new Error(`Failed to fetch audio data: ${res.status} ${res.statusText}`);
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+    return {audioBuffer, ctx};
+}
+
+/* 入力ノード、Analyserノードを生成し、出力層に接続 */
+function buildNodes(audioBuffer, ctx) {
+    const audioSrc = new AudioBufferSourceNode(ctx, { buffer: audioBuffer });
+    const analyser = new AnalyserNode(ctx);
+    analyser.fftSize = 512;
+    audioSrc.connect(analyser).connect(ctx.destination);
+    return {audioSrc, analyser};
+}
+
+/* スペクトルをもとにリップシンクを行う */
+function syncLip(spectrums, voicevox_id, currentSpeaker) {
+    const vocalRangeSpectrums = spectrums.slice(0, spectrums.length / 2);
+    const totalSpectrum = vocalRangeSpectrums.reduce((a, x) => a + x, 0);
+
+    console.log("Current total spectrum:", totalSpectrum);
+    console.log("Previous spectrum:", prevSpec);
+    console.log("Difference:", prevSpec - totalSpectrum);
+    console.log("Current voicevox_id:", voicevox_id);
+
+    // 四国めたん用のリップシンク
+    if ([0, 2, 4, 6, 36, 37].includes(parseInt(voicevox_id))) {
+        const leftMouseElement = document.querySelector('.standing-character.left .character-mouth');
+        if (leftMouseElement && currentSpeaker === 'A') {
+            if (totalSpectrum > prevSpec) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open.png')";
+            } else if (prevSpec - totalSpectrum < 250) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_open_middle.png')";
+            } else if (prevSpec - totalSpectrum < 500) {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close_middle.png')";
+            } else {
+                leftMouseElement.style.backgroundImage = "url('/static/assets/metan_mouse_close.png')";
+            }
+        }
