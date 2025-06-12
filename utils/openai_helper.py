@@ -209,6 +209,72 @@ def get_current_datetime_jp():
     }
     return date_info
 
+def analyze_conversation_context(conversation_history, current_message):
+    """会話の文脈を分析して、直前の話題や流れを特定する"""
+    if not conversation_history or len(conversation_history) < 2:
+        return None
+    
+    # 直近3つの発言を分析
+    recent_messages = conversation_history[-3:]
+    
+    # パターン1: 他のキャラクターが質問→ユーザーが回答
+    if len(recent_messages) >= 2:
+        last_assistant = None
+        last_user = None
+        
+        # 最後のアシスタントとユーザーの発言を見つける
+        for msg in reversed(recent_messages):
+            if msg['role'] == 'assistant' and last_assistant is None:
+                last_assistant = msg['content']
+            elif msg['role'] == 'user' and last_user is None:
+                last_user = msg['content']
+        
+        # 質問パターンを検出
+        question_patterns = ['？', '?', '興味', 'どう', 'どんな', 'ある？', 'ない？', 'どっち', '知ってる']
+        if last_assistant and any(pattern in last_assistant for pattern in question_patterns):
+            if last_user and current_message == last_user:
+                return {
+                    'type': 'question_response',
+                    'question': last_assistant,
+                    'answer': last_user,
+                    'topic_keywords': extract_topic_keywords(last_assistant)
+                }
+    
+    # パターン2: 継続的な話題
+    topic_keywords = []
+    for msg in recent_messages:
+        if msg['role'] in ['assistant', 'user']:
+            topic_keywords.extend(extract_topic_keywords(msg['content']))
+    
+    if topic_keywords:
+        return {
+            'type': 'continuing_topic',
+            'keywords': list(set(topic_keywords))
+        }
+    
+    return None
+
+def extract_topic_keywords(text):
+    """テキストから話題のキーワードを抽出"""
+    # 基本的なキーワード抽出（実際のプロジェクトではより高度な処理が可能）
+    keywords = []
+    
+    # 一般的な話題キーワード
+    topic_words = [
+        '仕事', '在宅', 'ワーク', '勉強', '学校', '料理', 'カレー', 'ラーメン',
+        '動画', '配信', 'YouTube', '漫画', 'アニメ', '映画', '音楽',
+        '買い物', 'コンビニ', 'セール', '節約', 'お金',
+        '天気', '雨', '梅雨', '暑い', '寒い',
+        '趣味', '読書', 'ゲーム', 'スポーツ',
+        '健康', '疲れ', '休憩', '睡眠'
+    ]
+    
+    for word in topic_words:
+        if word in text:
+            keywords.append(word)
+    
+    return keywords
+
 def get_chat_response(message, conversation_history=None, speaker_id=None, additional_instruction=None):
     try:
         if conversation_history is None:
@@ -217,8 +283,12 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
         # 現在の日時を取得
         current_datetime = get_current_datetime_jp()
 
+        # 会話の文脈を分析
+        context = analyze_conversation_context(conversation_history, message)
+        
         # デバッグログの追加：選択されたキャラクターの情報を出力
         logger.debug(f"Selected speaker_id: {speaker_id}")
+        logger.debug(f"Conversation context: {context}")
 
         # 祝日情報と季節情報の準備
         holiday_info = f"、本日は{current_datetime['holiday_name']}です" if current_datetime['holiday_name'] else ""
@@ -250,18 +320,39 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
 会話の中では、他の参加者の発言を自然に聞いて反応してください。
 時間帯に応じた適切な受け答えを心がけてください。"""
 
+        # 文脈に基づく追加指示を生成
+        context_instruction = ""
+        if context:
+            if context['type'] == 'question_response':
+                context_instruction = f"""
+                
+重要な会話の流れ：
+他のキャラクターが「{context['question']}」と質問し、ユーザーが「{context['answer']}」と答えました。
+この質問と回答の流れを理解して、その話題に関連したリアクションや意見、追加の質問などで会話を発展させてください。
+話題のキーワード：{', '.join(context['topic_keywords'])}"""
+            
+            elif context['type'] == 'continuing_topic':
+                context_instruction = f"""
+                
+会話の継続中の話題：
+現在進行中の話題に関するキーワード：{', '.join(context['keywords'])}
+これらの話題に関連した発言をして、会話の流れを自然に続けてください。"""
+
         # 追加指示がある場合は追加
         if additional_instruction:
             base_system_message += f"""
 
 追加指示:
 {additional_instruction}"""
+        
+        if context_instruction:
+            base_system_message += context_instruction
 
         # メッセージ配列の構築
         messages = [{"role": "system", "content": base_system_message}]
 
         # 会話履歴を追加（直近の会話のみを含める）
-        recent_history = conversation_history[-4:] if len(conversation_history) > 4 else conversation_history
+        recent_history = conversation_history[-6:] if len(conversation_history) > 6 else conversation_history
         messages.extend(recent_history)
 
         # 現在のメッセージを追加
