@@ -670,28 +670,36 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.body.appendChild(rightCharacter);
 
     // Function to update standing characters with fade animation
-    function updateStandingCharacters() {
-        console.log("Updating standing characters");
+    function updateStandingCharacters(changedSpeaker = 'both') {
+        console.log("Updating standing characters", changedSpeaker);
 
-        // フェードアウトアニメーションを開始
-        leftCharacter.classList.add('fade-out');
-        rightCharacter.classList.add('fade-out');
+        // 変更された話者のみフェードアウト
+        if (changedSpeaker === 'both' || changedSpeaker === 'A') {
+            leftCharacter.classList.add('fade-out');
+        }
+        if (changedSpeaker === 'both' || changedSpeaker === 'B') {
+            rightCharacter.classList.add('fade-out');
+        }
 
         // アニメーション完了後にキャラクターを更新
         setTimeout(() => {
             // 既存のキャラクターをクリーンアップ
-            if (leftCharacter.cleanup) {
+            if ((changedSpeaker === 'both' || changedSpeaker === 'A') && leftCharacter.cleanup) {
                 console.log("Cleaning up left character");
                 leftCharacter.cleanup();
             }
-            if (rightCharacter.cleanup) {
+            if ((changedSpeaker === 'both' || changedSpeaker === 'B') && rightCharacter.cleanup) {
                 console.log("Cleaning up right character");
                 rightCharacter.cleanup();
             }
 
             // フェードアウトクラスを削除
-            leftCharacter.classList.remove('fade-out');
-            rightCharacter.classList.remove('fade-out');
+            if (changedSpeaker === 'both' || changedSpeaker === 'A') {
+                leftCharacter.classList.remove('fade-out');
+            }
+            if (changedSpeaker === 'both' || changedSpeaker === 'B') {
+                rightCharacter.classList.remove('fade-out');
+            }
 
         const speakerA = speakers.find(s => s.speaker_uuid === speakerASelect.value);
         const speakerB = speakers.find(s => s.speaker_uuid === speakerBSelect.value);
@@ -826,13 +834,21 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // フェードインアニメーションを開始
         setTimeout(() => {
-            leftCharacter.classList.add('fade-in');
-            rightCharacter.classList.add('fade-in');
+            if (changedSpeaker === 'both' || changedSpeaker === 'A') {
+                leftCharacter.classList.add('fade-in');
+            }
+            if (changedSpeaker === 'both' || changedSpeaker === 'B') {
+                rightCharacter.classList.add('fade-in');
+            }
             
             // フェードインアニメーション完了後にクラスを削除
             setTimeout(() => {
-                leftCharacter.classList.remove('fade-in');
-                rightCharacter.classList.remove('fade-in');
+                if (changedSpeaker === 'both' || changedSpeaker === 'A') {
+                    leftCharacter.classList.remove('fade-in');
+                }
+                if (changedSpeaker === 'both' || changedSpeaker === 'B') {
+                    rightCharacter.classList.remove('fade-in');
+                }
             }, 600); // CSS transition時間と合わせる
         }, 50); // キャラクター設定後に少し待ってから開始
 
@@ -840,8 +856,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Add event listeners for speaker selection changes
-    speakerASelect.addEventListener('change', updateStandingCharacters);
-    speakerBSelect.addEventListener('change', updateStandingCharacters);
+    speakerASelect.addEventListener('change', () => updateStandingCharacters('A'));
+    speakerBSelect.addEventListener('change', () => updateStandingCharacters('B'));
 
     // Initialize theme
     document.documentElement.setAttribute('data-theme', currentTheme);
