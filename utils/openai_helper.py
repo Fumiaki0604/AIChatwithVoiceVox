@@ -291,7 +291,8 @@ def get_claude_response(message, conversation_history=None, speaker_id=None, add
     """Claude APIを使用してチャット応答を取得する（話者B専用）"""
     try:
         if not anthropic_client:
-            raise Exception("Anthropic API key not configured")
+            logger.warning("Anthropic API key not configured, falling back to GPT-4.1")
+            return get_chat_response(message, conversation_history, speaker_id, additional_instruction, use_claude=False)
             
         if conversation_history is None:
             conversation_history = []
@@ -398,8 +399,9 @@ def get_claude_response(message, conversation_history=None, speaker_id=None, add
             "history": conversation_history
         }
     except Exception as e:
-        logger.error(f"Claude APIエラー: {str(e)}")
-        raise Exception(f"Failed to get Claude response: {str(e)}")
+        logger.warning(f"Claude APIエラー、GPT-4.1にフォールバック: {str(e)}")
+        # Claude APIエラーの場合、GPT-4.1にフォールバック
+        return get_chat_response(message, conversation_history, speaker_id, additional_instruction, use_claude=False)
 
 def get_chat_response(message, conversation_history=None, speaker_id=None, additional_instruction=None, use_claude=False):
     """チャット応答を取得する（GPT-4.1またはClaude）"""
