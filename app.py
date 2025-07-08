@@ -14,6 +14,34 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "a-very-secret-key")
 
+# 話者ポジション判定用の関数
+def determine_speaker_position(speaker_id):
+    """
+    話者IDに基づいて、その話者が位置A(左側)かB(右側)かを判定する
+    通常の表示順序に基づいて判定
+    """
+    # 通常のキャラクター表示順序
+    # 左側（話者A): ずんだもん、春日部つむぎ 
+    # 右側（話者B): 四国めたん、雨晴はう、WhiteCUL
+    speaker_a_list = [
+        "388f246b-8c41-4ac1-8e2d-5d79f3ff56d9",  # ずんだもん
+        "35b2c544-660e-401e-b503-0e14c635303a",  # 春日部つむぎ
+    ]
+    
+    speaker_b_list = [
+        "7ffcb7ce-00ec-4bdc-82cd-45a8889e43ff",  # 四国めたん  
+        "3474ee95-c274-47f9-aa1a-8322163d96f1",  # 雨晴はう
+        "67d5d8da-acd7-4207-bb10-692f330a6e70",  # WhiteCUL
+    ]
+    
+    if speaker_id in speaker_a_list:
+        return "A"
+    elif speaker_id in speaker_b_list:
+        return "B"
+    else:
+        # デフォルトは話者Aとして扱う
+        return "A"
+
 # Load VOICEVOX speaker data
 try:
     with open('attached_assets/voicebox_speakerID.json', 'r', encoding='utf-8') as f:
@@ -81,8 +109,13 @@ def chat():
             - WhiteCULの場合は「あなた」
             """
             
+            # 新しいAPIでも話者B（右側）でClaudeを使用する
+            # 話者UUIDリストを使用してポジションを判定
+            speaker_position = determine_speaker_position(speaker_id)
+            use_claude = (speaker_position == "B")
+            
             # Get response for speaker
-            response = get_chat_response(user_message, conversation_history, speaker_id, additional_instruction=additional_instruction)
+            response = get_chat_response(user_message, conversation_history, speaker_id, additional_instruction=additional_instruction, use_claude=use_claude)
             logger.debug(f"Speaker ({speaker_id}) response: {response}")
 
             # 応答を返す
@@ -172,7 +205,7 @@ def chat():
                 - 春日部つむぎの場合は「きみ」
                 - WhiteCULの場合は「あなた」"""
                 
-                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True)
             
             elif pattern_choice < 0.4:  # パターンB(10%): 反対
                 logger.debug(f"Using pattern B: Speaker B disagrees with Speaker A")
@@ -187,7 +220,7 @@ def chat():
                 - 春日部つむぎの場合は「きみ」
                 - WhiteCULの場合は「あなた」"""
                 
-                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True)
             
             elif pattern_choice < 0.8:  # パターンC(40%): 独立した返答
                 logger.debug(f"Using pattern C: Speaker B gives independent response")
@@ -201,7 +234,7 @@ def chat():
                 - 春日部つむぎの場合は「きみ」
                 - WhiteCULの場合は「あなた」"""
                 
-                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True)
             
             else:  # パターンD(20%): 別の話題を提供
                 logger.debug(f"Using pattern D: Speaker B introduces a new topic")
@@ -217,7 +250,7 @@ def chat():
                 - 春日部つむぎの場合は「きみ」
                 - WhiteCULの場合は「あなた」"""
                 
-                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction)
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True)
             
             logger.debug(f"Speaker B ({speaker_b}) response: {response_b}")
 

@@ -11,4 +11,5 @@ dependencies = [
     "pytz>=2024.2",
     "jpholiday>=0.1.10",
     "openai==0.28",
+    "anthropic>=0.57.1",
 ]
