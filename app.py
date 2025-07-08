@@ -179,18 +179,24 @@ def chat():
                 
                 # 春日部つむぎ から見た他のキャラクターの呼び方
                 ("春日部つむぎ", "四国めたん"): "めたん先輩",
-                ("春日部つむぎ", "雨晴はう"): "はうさん",
+                ("春日部つむぎ", "雨晴はう"): "はうちゃん",
                 ("春日部つむぎ", "WhiteCUL"): "雪さん",
                 
                 # 雨晴はう から見た他のキャラクターの呼び方
                 ("雨晴はう", "四国めたん"): "めたんさん",
-                ("雨晴はう", "春日部つむぎ"): "はうちゃん",
+                ("雨晴はう", "春日部つむぎ"): "つむぎちゃん",
                 ("雨晴はう", "WhiteCUL"): "ゆきさん",
             }
             
             # 適切な呼称を取得
             nickname_key = (speaker_b_name, speaker_a_name)
             speaker_a_nickname = character_nicknames.get(nickname_key, speaker_a_name)
+            
+            # 話者A情報を準備
+            speaker_a_info = {
+                'name': speaker_a_name,
+                'nickname': speaker_a_nickname
+            }
             
             if pattern_choice < 0.3:  # パターンA(30%): 同調
                 logger.debug(f"Using pattern A: Speaker B agrees with Speaker A")
@@ -205,7 +211,7 @@ def chat():
                 - 春日部つむぎの場合は「きみ」
                 - WhiteCULの場合は「あなた」"""
                 
-                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True)
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True, speaker_a_info=speaker_a_info)
             
             elif pattern_choice < 0.4:  # パターンB(10%): 反対
                 logger.debug(f"Using pattern B: Speaker B disagrees with Speaker A")
@@ -220,7 +226,7 @@ def chat():
                 - 春日部つむぎの場合は「きみ」
                 - WhiteCULの場合は「あなた」"""
                 
-                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True)
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True, speaker_a_info=speaker_a_info)
             
             elif pattern_choice < 0.8:  # パターンC(40%): 独立した返答
                 logger.debug(f"Using pattern C: Speaker B gives independent response")
@@ -234,7 +240,7 @@ def chat():
                 - 春日部つむぎの場合は「きみ」
                 - WhiteCULの場合は「あなた」"""
                 
-                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True)
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True, speaker_a_info=speaker_a_info)
             
             else:  # パターンD(20%): 別の話題を提供
                 logger.debug(f"Using pattern D: Speaker B introduces a new topic")
@@ -250,7 +256,7 @@ def chat():
                 - 春日部つむぎの場合は「きみ」
                 - WhiteCULの場合は「あなた」"""
                 
-                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True)
+                response_b = get_chat_response(user_message, conversation_history, speaker_b, additional_instruction=instruction, use_claude=True, speaker_a_info=speaker_a_info)
             
             logger.debug(f"Speaker B ({speaker_b}) response: {response_b}")
 

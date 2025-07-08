@@ -287,7 +287,7 @@ def extract_topic_keywords(text):
     
     return keywords
 
-def get_claude_response(message, conversation_history=None, speaker_id=None, additional_instruction=None):
+def get_claude_response(message, conversation_history=None, speaker_id=None, additional_instruction=None, speaker_a_info=None):
     """Claude APIを使用してチャット応答を取得する（話者B専用）"""
     try:
         if not anthropic_client:
@@ -305,6 +305,7 @@ def get_claude_response(message, conversation_history=None, speaker_id=None, add
         
         # デバッグログ
         logger.debug(f"Selected speaker_id for Claude: {speaker_id}")
+        logger.debug(f"Speaker A info: {speaker_a_info}")
         logger.debug(f"Conversation context: {context}")
 
         # 祝日情報と季節情報の準備
@@ -319,6 +320,18 @@ def get_claude_response(message, conversation_history=None, speaker_id=None, add
         profile = CHARACTER_PROFILES[speaker_id]
         logger.debug(f"Using profile for character (Claude): {profile['name']}")
 
+        # 話者A情報を追加
+        speaker_a_instruction = ""
+        if speaker_a_info:
+            speaker_a_instruction = f"""
+
+【重要】会話の相手について：
+この会話には他にもキャラクターが参加しています。特に話者A（左側のキャラクター）は「{speaker_a_info['name']}」です。
+{speaker_a_info['name']}のことを話題に出す際や、{speaker_a_info['name']}に向けて話しかける際は、必ず「{speaker_a_info['nickname']}」と呼んでください。
+例: 「{speaker_a_info['nickname']}が言ってたように...」「{speaker_a_info['nickname']}はどう思う？」など
+
+話者間の自然な会話を心がけ、適切な呼称を使用してください。"""
+
         # システムメッセージの構築
         base_system_message = f"""あなたは{profile['name']}として会話するAIアシスタントです。
 現在は{current_datetime['full']}です{holiday_info}。
@@ -331,7 +344,7 @@ def get_claude_response(message, conversation_history=None, speaker_id=None, add
 {profile['speaking_style']}
 
 会話の中では、他の参加者の発言を自然に聞いて反応してください。
-時間帯に応じた適切な受け答えを心がけてください。"""
+時間帯に応じた適切な受け答えを心がけてください。{speaker_a_instruction}"""
 
         # 文脈に基づく追加指示を生成
         context_instruction = ""
@@ -403,10 +416,10 @@ def get_claude_response(message, conversation_history=None, speaker_id=None, add
         # Claude APIエラーの場合、GPT-4.1にフォールバック
         return get_chat_response(message, conversation_history, speaker_id, additional_instruction, use_claude=False)
 
-def get_chat_response(message, conversation_history=None, speaker_id=None, additional_instruction=None, use_claude=False):
+def get_chat_response(message, conversation_history=None, speaker_id=None, additional_instruction=None, use_claude=False, speaker_a_info=None):
     """チャット応答を取得する（GPT-4.1またはClaude）"""
     if use_claude:
-        return get_claude_response(message, conversation_history, speaker_id, additional_instruction)
+        return get_claude_response(message, conversation_history, speaker_id, additional_instruction, speaker_a_info)
     
     try:
         if conversation_history is None:
