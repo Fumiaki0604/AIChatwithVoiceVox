@@ -316,7 +316,7 @@ function createAudioControl(text, styleId, currentSpeaker) {
 
 async function play(text, styleId, currentSpeaker) {
     console.log("Starting play function with:", {text, styleId, currentSpeaker});
-    var ttsQuestApiKey = 'p-s205e-L706841';
+    var ttsQuestApiKey = TTS_QUEST_API_KEY;  // グローバル変数から取得
     var audio = new TtsQuestV3Voicevox(styleId, text, ttsQuestApiKey);
 
     return new Promise((resolve, reject) => {
