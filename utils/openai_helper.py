@@ -527,8 +527,26 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
             raise Exception(f"OpenAI API error: {response.status_code}")
 
         result = response.json()
-        response_content = result['choices'][0]['message']['content']
-        logger.debug(f"Response from OpenAI: {response_content}")
+        logger.debug(f"Full OpenAI response: {result}")
+
+        # GPT-5のレスポンス構造を確認
+        if 'choices' in result and len(result['choices']) > 0:
+            choice = result['choices'][0]
+            logger.debug(f"First choice: {choice}")
+
+            # messageオブジェクトの確認
+            if 'message' in choice:
+                message_obj = choice['message']
+                logger.debug(f"Message object: {message_obj}")
+                response_content = message_obj.get('content', '')
+            else:
+                logger.error("No 'message' field in choice")
+                response_content = ''
+        else:
+            logger.error("No 'choices' in response")
+            response_content = ''
+
+        logger.debug(f"Extracted response content: {response_content}")
 
         return {
             "content": response_content,
