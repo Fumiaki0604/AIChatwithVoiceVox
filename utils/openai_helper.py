@@ -1,6 +1,6 @@
 import os
 import logging
-import openai
+import requests
 import anthropic
 from datetime import datetime
 import pytz
@@ -13,8 +13,6 @@ logger = logging.getLogger(__name__)
 # API Keys configuration
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-
-openai.api_key = OPENAI_API_KEY
 
 # Initialize Anthropic client
 anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
@@ -507,14 +505,30 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
         # デバッグログ：OpenAIに送信するメッセージを出力
         logger.debug(f"Messages being sent to OpenAI: {messages}")
 
-        response = openai.ChatCompletion.create(
-            model="gpt-4.1",
-            messages=messages,
-            max_tokens=500,
-            temperature=0.7
+        if not OPENAI_API_KEY:
+            raise Exception("OpenAI API key not configured")
+
+        # OpenAI APIを直接呼び出し（gpt-5-mini-2025-08-07を使用）
+        response = requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {OPENAI_API_KEY}'
+            },
+            json={
+                'model': 'gpt-5-mini-2025-08-07',
+                'messages': messages,
+                'max_tokens': 500,
+                'temperature': 0.7
+            }
         )
 
-        response_content = response.choices[0].message["content"]
+        if not response.ok:
+            logger.error(f"OpenAI API HTTP Error: {response.status_code} {response.text}")
+            raise Exception(f"OpenAI API error: {response.status_code}")
+
+        result = response.json()
+        response_content = result['choices'][0]['message']['content']
         logger.debug(f"Response from OpenAI: {response_content}")
 
         return {
