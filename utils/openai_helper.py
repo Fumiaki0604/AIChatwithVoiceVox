@@ -508,7 +508,7 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
         if not OPENAI_API_KEY:
             raise Exception("OpenAI API key not configured")
 
-        # OpenAI APIを直接呼び出し（gpt-5-mini-2025-08-07を使用）
+        # OpenAI APIを直接呼び出し（gpt-4oを使用）
         response = requests.post(
             'https://api.openai.com/v1/chat/completions',
             headers={
@@ -516,9 +516,10 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
                 'Authorization': f'Bearer {OPENAI_API_KEY}'
             },
             json={
-                'model': 'gpt-5-mini-2025-08-07',
+                'model': 'gpt-4o',
                 'messages': messages,
-                'max_completion_tokens': 500
+                'max_tokens': 500,
+                'temperature': 0.7
             }
         )
 
