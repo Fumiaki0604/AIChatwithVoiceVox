@@ -161,6 +161,8 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
         button.disabled = true;
     });
 
+    let audioDuration = 0;  // 関数スコープで宣言
+
     try {
         const {audioBuffer, ctx: newCtx} = await preparedBuffer(voice_path);
         console.log("Audio buffer prepared successfully");
@@ -171,7 +173,7 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
         analyser = newAnalyser;
 
         // 音声の長さを取得（ミリ秒）
-        const audioDuration = audioBuffer.duration * 1000;
+        audioDuration = audioBuffer.duration * 1000;
         console.log("Audio duration:", audioDuration, "ms");
 
         // 音声再生開始前に状態を更新
@@ -1003,7 +1005,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                     // 実際の音声の長さ + 500msの間隔で話者Bを再生
                     const delay = speakerADuration > 0 ? speakerADuration + 500 : 1000;
                     setTimeout(async () => {
-                        await play(data.speaker_b, styleBSelect.value, 'B');
+                        try {
+                            await play(data.speaker_b, styleBSelect.value, 'B');
+                        } catch (error) {
+                            console.error('Error playing speaker B:', error);
+                            addMessage('話者Bの再生エラーが発生しました', 'error');
+                        }
                     }, delay);
                 }
             } else {
