@@ -518,7 +518,7 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
             json={
                 'model': 'gpt-5-mini-2025-08-07',
                 'messages': messages,
-                'max_tokens': 500,
+                'max_completion_tokens': 500,
                 'temperature': 0.7
             }
         )
