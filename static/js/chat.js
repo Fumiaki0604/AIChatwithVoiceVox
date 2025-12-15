@@ -170,6 +170,10 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
         audioSrc = newAudioSrc;
         analyser = newAnalyser;
 
+        // 音声の長さを取得（ミリ秒）
+        const audioDuration = audioBuffer.duration * 1000;
+        console.log("Audio duration:", audioDuration, "ms");
+
         // 音声再生開始前に状態を更新
         isPlaying = true;
         if (currentStatusIndicator) {
@@ -267,6 +271,8 @@ async function playVoice(voice_path, voicevox_id, message, currentSpeaker) {
         }
         throw error;
     }
+
+    return audioDuration;
 }
 
 // createAudioControl関数の修正部分
@@ -330,8 +336,8 @@ async function play(text, styleId, currentSpeaker) {
                 const mp3Url = await audio.play();
                 console.log("Received MP3 URL:", mp3Url);
                 if (mp3Url) {
-                    await playVoice(mp3Url, styleId, text, currentSpeaker);
-                    resolve();
+                    const duration = await playVoice(mp3Url, styleId, text, currentSpeaker);
+                    resolve(duration);
                 } else {
                     throw new Error('音声URLの取得に失敗しました');
                 }
@@ -986,16 +992,19 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (response.ok) {
                 // 話者Aのメッセージを追加して再生
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
+                let speakerADuration = 0;
                 if (speakerAMessage) {
-                    await play(data.speaker_a, styleASelect.value, 'A');
+                    speakerADuration = await play(data.speaker_a, styleASelect.value, 'A');
                 }
 
-                // 話者Bのメッセージを追加して再生（話者Aの再生後に遅延して実行）
+                // 話者Bのメッセージを追加して再生（話者Aの実際の再生時間後に少し遅延して実行）
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
                 if (speakerBMessage) {
+                    // 実際の音声の長さ + 500msの間隔で話者Bを再生
+                    const delay = speakerADuration > 0 ? speakerADuration + 500 : 1000;
                     setTimeout(async () => {
                         await play(data.speaker_b, styleBSelect.value, 'B');
-                    }, data.speaker_a.length * 180);
+                    }, delay);
                 }
             } else {
                 addMessage('エラーが発生しました: ' + data.error, 'error');
