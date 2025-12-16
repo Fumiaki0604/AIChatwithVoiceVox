@@ -289,7 +289,7 @@ def get_claude_response(message, conversation_history=None, speaker_id=None, add
     """Claude APIを使用してチャット応答を取得する（話者B専用）"""
     try:
         if not anthropic_client:
-            logger.warning("Anthropic API key not configured, falling back to GPT-4.1")
+            logger.warning("Anthropic API key not configured, falling back to GPT-5.2")
             return get_chat_response(message, conversation_history, speaker_id, additional_instruction, use_claude=False)
             
         if conversation_history is None:
@@ -410,12 +410,12 @@ def get_claude_response(message, conversation_history=None, speaker_id=None, add
             "history": conversation_history
         }
     except Exception as e:
-        logger.warning(f"Claude APIエラー、GPT-4.1にフォールバック: {str(e)}")
-        # Claude APIエラーの場合、GPT-4.1にフォールバック
+        logger.warning(f"Claude APIエラー、GPT-5.2にフォールバック: {str(e)}")
+        # Claude APIエラーの場合、GPT-5.2にフォールバック
         return get_chat_response(message, conversation_history, speaker_id, additional_instruction, use_claude=False)
 
 def get_chat_response(message, conversation_history=None, speaker_id=None, additional_instruction=None, use_claude=False, speaker_a_info=None):
-    """チャット応答を取得する（GPT-4.1またはClaude）"""
+    """チャット応答を取得する（GPT-5.2またはClaude）"""
     if use_claude:
         return get_claude_response(message, conversation_history, speaker_id, additional_instruction, speaker_a_info)
     
@@ -508,7 +508,7 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
         if not OPENAI_API_KEY:
             raise Exception("OpenAI API key not configured")
 
-        # OpenAI APIを直接呼び出し（gpt-4oを使用）
+        # OpenAI APIを直接呼び出し（gpt-5.2-chat-latestを使用）
         response = requests.post(
             'https://api.openai.com/v1/chat/completions',
             headers={
@@ -516,10 +516,10 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
                 'Authorization': f'Bearer {OPENAI_API_KEY}'
             },
             json={
-                'model': 'gpt-4o',
+                'model': 'gpt-5.2-chat-latest',  # GPT-5.2 Instant（高速会話用）
                 'messages': messages,
-                'max_tokens': 500,
-                'temperature': 0.7
+                'max_completion_tokens': 500  # max_tokensから変更
+                # temperature はGPT-5.2ではサポートされないため削除
             }
         )
 
@@ -530,7 +530,7 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
         result = response.json()
         logger.debug(f"Full OpenAI response: {result}")
 
-        # GPT-5のレスポンス構造を確認
+        # GPT-5.2のレスポンス構造を確認
         if 'choices' in result and len(result['choices']) > 0:
             choice = result['choices'][0]
             logger.debug(f"First choice: {choice}")
@@ -554,5 +554,5 @@ def get_chat_response(message, conversation_history=None, speaker_id=None, addit
             "history": conversation_history
         }
     except Exception as e:
-        logger.error(f"OpenAI APIエラー: {str(e)}")
-        raise Exception(f"Failed to get ChatGPT response: {str(e)}")
+        logger.error(f"OpenAI API (GPT-5.2) エラー: {str(e)}")
+        raise Exception(f"Failed to get GPT-5.2 response: {str(e)}")

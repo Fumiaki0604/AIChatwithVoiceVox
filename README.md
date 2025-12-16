@@ -4,7 +4,7 @@ VoiceVoxを使用したAI音声チャットアプリケーション
 
 ## 機能
 
-- ChatGPT (GPT-5.1 mini) / Claude (Sonnet 4) による会話
+- ChatGPT (GPT-5.2 Instant) / Claude (Sonnet 4) による会話
 - VoiceVoxによる音声合成
 - 複数のキャラクター（四国めたん、雨晴はう、春日部つむぎ、WhiteCUL、ずんだもん）
 - 会話履歴の管理
