@@ -994,16 +994,15 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (response.ok) {
                 // 話者Aのメッセージを追加して再生
                 const speakerAMessage = addMessage(data.speaker_a, 'ai-message-a');
-                let speakerADuration = 0;
                 if (speakerAMessage) {
-                    speakerADuration = await play(data.speaker_a, styleASelect.value, 'A');
+                    await play(data.speaker_a, styleASelect.value, 'A');
                 }
 
-                // 話者Bのメッセージを追加して再生（話者Aの実際の再生時間後に少し遅延して実行）
+                // 話者Bのメッセージを追加して再生（話者Aのテキスト長に基づいて遅延）
                 const speakerBMessage = addMessage(data.speaker_b, 'ai-message-b');
                 if (speakerBMessage) {
-                    // 実際の音声の長さ + 500msの間隔で話者Bを再生
-                    const delay = speakerADuration > 0 ? speakerADuration + 500 : 1000;
+                    // 文字数 × 100ms（以前の180msより短縮）
+                    const delay = data.speaker_a.length * 100;
                     setTimeout(async () => {
                         try {
                             await play(data.speaker_b, styleBSelect.value, 'B');
